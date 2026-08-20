@@ -1,0 +1,33 @@
+http://plex.evan {
+    redir / /web
+    reverse_proxy localhost:32400
+}
+
+http://pihole.evan {
+    redir / /admin
+    reverse_proxy localhost:8080
+}
+
+http://wireguard.evan {
+    reverse_proxy localhost:51821
+}
+
+http://prowlarr.evan {
+    reverse_proxy localhost:9696
+}
+
+http://qbittorrent.evan {
+    reverse_proxy localhost:8081
+}
+
+http://radarr.evan {
+    reverse_proxy localhost:7878
+}
+
+http://dashboard.evan {
+    reverse_proxy localhost:3000
+}
+
+http://sonarr.evan {
+    reverse_proxy localhost:8989
+}

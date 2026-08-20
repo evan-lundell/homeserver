@@ -1,0 +1,38 @@
+# Secrets
+.env
+
+# Plex — large binary database, auth tokens, watch history
+plex/config/
+plex/transcode/
+
+# WireGuard — actual private keys for every peer
+wireguard/
+
+# Pi-hole — runtime database, query logs (not hand-edited config)
+pihole/etc-pihole/
+pihole/etc-dnsmasq.d/
+
+# Caddy — may contain TLS keys/certs, autosave state
+caddy/data/
+caddy/config/
+
+# ddclient — contains No-IP credentials directly
+ddclient/ddclient.conf
+
+# gluetun - runtime state, cached server lists
+gluetun/
+
+# qBittorrent - runtime config/session state
+qbittorrent/
+
+# prowlarr
+prowlarr/
+
+# radarr
+radarr/
+
+# sonarr — runtime config, API keys
+sonarr/
+
+# Homepage — logs and any cached/runtime state (config itself is safe, tracked separately below)
+homepage/config/logs/

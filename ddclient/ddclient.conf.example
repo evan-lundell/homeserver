@@ -1,0 +1,7 @@
+protocol=noip
+use=web, web=checkip.dyndns.com/, web-skip='IP Address'
+server=dynupdate.no-ip.com
+login=evan.lundell@gmail.com
+password='changeme'
+ssl=yes
+evanlundell.ddns.net

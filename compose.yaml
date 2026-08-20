@@ -1,0 +1,189 @@
+services:
+  plex:
+    image: plexinc/pms-docker:latest
+    container_name: plex
+    restart: unless-stopped
+    network_mode: host
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/bus/usb:/dev/bus/usb
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - ./plex/config:/config
+      - ./plex/transcode:/transcode
+      - /mnt/media/Plex:/data
+
+  samba:
+    image: dperson/samba
+    container_name: samba
+    restart: unless-stopped
+    ports:
+      - "139:139"
+      - "445:445"
+    environment:
+      - TZ=America/Chicago
+    volumes:
+      - /mnt/media:/media
+      - /srv/general-share:/general
+      - ./samba/smb.conf:/etc/samba/smb.conf
+    command: >
+      -u "evan;${SAMBA_EVAN_PASSWORD}"
+      -u "karla;${SAMBA_KARLA_PASSWORD}"
+
+  wireguard:
+    image: ghcr.io/wg-easy/wg-easy
+    container_name: wireguard
+    restart: unless-stopped
+    environment:
+      - WG_HOST=evanlundell.ddns.net
+      - PASSWORD_HASH=${WG_PASSWORD_HASH}
+      - PGID=1000
+      - PUID=1000
+    volumes:
+      - ./wireguard:/etc/wireguard
+    ports:
+      - "51820:51820/udp"
+      - "51821:51821/tcp"
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.src_valid_mark=1
+
+  ddclient:
+    image: linuxserver/ddclient
+    container_name: ddclient
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - ./ddclient:/config
+
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TZ=America/Chicago
+      - FTLCONF_webserver_api_password=${PIHOLE_PASSWORD}
+      - FTLCONF_webserver_port=8080
+    volumes:
+      - ./pihole/etc-pihole:/etc/pihole
+      - ./pihole/etc-dnsmasq.d:/etc/dnsmasq.d
+    cap_add:
+      - NET_ADMIN
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy/data:/data
+      - ./caddy/config:/config
+
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - VPN_SERVICE_PROVIDER=expressvpn
+      - OPENVPN_USER=${EXPRESSVPN_USER}
+      - OPENVPN_PASSWORD=${EXPRESSVPN_PASSWORD}
+      - SERVER_COUNTRIES=USA
+    volumes:
+      - ./gluetun:/gluetun
+    ports:
+      - "8081:8081"
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    network_mode: "service:gluetun"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+      - WEBUI_PORT=8081
+    volumes:
+      - ./qbittorrent:/config
+      - /mnt/media/Plex:/data
+    depends_on:
+      - gluetun
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - ./prowlarr:/config
+    ports:
+      - "9696:9696"
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - ./radarr:/config
+      - /mnt/media/Plex:/data
+    ports:
+      - "7878:7878"
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - HOMEPAGE_ALLOWED_HOSTS=192.168.1.17:3000,dashboard.evan
+      - HOMEPAGE_ALLOWED_HOSTS=192.168.1.17:3000,dashboard.evan
+      - HOMEPAGE_VAR_PLEX_TOKEN=${PLEX_TOKEN}
+      - HOMEPAGE_VAR_RADARR_API_KEY=${RADARR_API_KEY}
+      - HOMEPAGE_VAR_QBITTORRENT_USERNAME=${QBITTORRENT_USERNAME}
+      - HOMEPAGE_VAR_QBITTORRENT_PASSWORD=${QBITTORRENT_PASSWORD}
+      - HOMEPAGE_VAR_PIHOLE_PASSWORD=${PIHOLE_PASSWORD}
+      - HOMEPAGE_VAR_WG_PASSWORD=${WG_ADMIN_PASSWORD}
+      - HOMEPAGE_VAR_SONARR_API_KEY=${SONARR_API_KEY}
+    volumes:
+      - ./homepage/config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /mnt/media:/mnt/media:ro
+    ports:
+      - "3000:3000"
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - ./sonarr:/config
+      - /mnt/media/Plex:/data
+    ports:
+      - "8989:8989"

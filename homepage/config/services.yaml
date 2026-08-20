@@ -1,0 +1,62 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/services/
+
+- Media:
+    - Plex:
+        href: http://plex.evan/web
+        description: Media server
+        widget:
+          type: plex
+          url: http://192.168.1.17:32400
+          key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
+
+- Downloads:
+    - qBittorrent:
+        href: http://192.168.1.17:8081
+        description: Download client (behind VPN)
+        widget:
+          type: qbittorrent
+          url: http://gluetun:8081
+          username: "{{HOMEPAGE_VAR_QBITTORRENT_USERNAME}}"
+          password: "{{HOMEPAGE_VAR_QBITTORRENT_PASSWORD}}"
+    - Radarr:
+        href: http://192.168.1.17:7878
+        description: Movie automation
+        widget:
+          type: radarr
+          url: http://radarr:7878
+          key: "{{HOMEPAGE_VAR_RADARR_API_KEY}}"
+    - Sonarr:
+        href: http://192.168.1.17:8989
+        description: TV automation
+        widget:
+          type: sonarr
+          url: http://sonarr:8989
+          key: "{{HOMEPAGE_VAR_SONARR_API_KEY}}"
+    - Prowlarr:
+        href: http://prowlarr.evan
+        description: Indexer manager
+
+- Network:
+    - Pi-hole:
+        href: http://pihole.evan/admin
+        description: Network-wide ad blocking
+        widget:
+          type: pihole
+          url: http://192.168.1.17:8080
+          key: "{{HOMEPAGE_VAR_PIHOLE_PASSWORD}}"
+          version: 6
+    - WireGuard:
+        href: http://wireguard.evan
+        description: VPN
+        widget:
+          type: wgeasy
+          url: http://192.168.1.17:51821
+          password: "{{HOMEPAGE_VAR_WG_PASSWORD}}"
+        threshold: 2
+
+- Files:
+  - Samba:
+      href: smb://samba.evan/media
+      description: File shares
