@@ -8,12 +8,12 @@
         description: Media server
         widget:
           type: plex
-          url: http://192.168.1.17:32400
+          url: http://plex.evan
           key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
 
 - Downloads:
     - qBittorrent:
-        href: http://192.168.1.17:8081
+        href: http://qbittorrent.evan
         description: Download client (behind VPN)
         widget:
           type: qbittorrent
@@ -21,14 +21,14 @@
           username: "{{HOMEPAGE_VAR_QBITTORRENT_USERNAME}}"
           password: "{{HOMEPAGE_VAR_QBITTORRENT_PASSWORD}}"
     - Radarr:
-        href: http://192.168.1.17:7878
+        href: http://radarr.evan
         description: Movie automation
         widget:
           type: radarr
           url: http://radarr:7878
           key: "{{HOMEPAGE_VAR_RADARR_API_KEY}}"
     - Sonarr:
-        href: http://192.168.1.17:8989
+        href: http://sonarr.evan
         description: TV automation
         widget:
           type: sonarr
