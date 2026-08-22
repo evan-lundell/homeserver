@@ -106,6 +106,7 @@ services:
       - ./gluetun:/gluetun
     ports:
       - "8081:8081"
+      - "9696:9696"
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -127,14 +128,15 @@ services:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     restart: unless-stopped
+    network_mode: "service:gluetun"
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=America/Chicago
     volumes:
       - ./prowlarr:/config
-    ports:
-      - "9696:9696"
+    depends_on:
+      - gluetun
 
   radarr:
     image: lscr.io/linuxserver/radarr:latest
