@@ -18,7 +18,7 @@ network, and which services you actually want, rather than assuming a
 specific setup. If you're using Claude, you can start with a prompt like:
 
 ```
-I'm setting up my own home server using this Docker Compose template: <repo URL>
+I'm setting up my own home server using this Docker Compose template: https://github.com/evan-lundell/homeserver
 (read the README and compose.yaml — fetch them if you can, otherwise I'll
 paste the contents). Interview me first: what hardware/OS I'm running, my
 network setup (router, whether I can set a static LAN IP, whether I want a
