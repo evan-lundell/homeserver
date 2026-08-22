@@ -83,7 +83,7 @@ of things are hardware/environment-dependent — check what applies to you:
 
 ### 2. Clone and configure
 
-1. Clone this repo to wherever you want it on the server (e.g. `~/docker`).
+1. Clone this repo to wherever you want it on the server (e.g. `~/homeserver`).
 2. Copy each `.example` file and fill in real values:
    - `.env.example` → `.env`
    - `ddclient/ddclient.conf.example` → `ddclient/ddclient.conf` (skip if
@@ -91,16 +91,16 @@ of things are hardware/environment-dependent — check what applies to you:
    - `samba/smb.conf.example` → `samba/smb.conf` (skip if you're not using
      Samba) — see "Setting up your own Samba users" below
 3. Create the host directories each service you're keeping needs (these
-   hold runtime state and aren't tracked in git), e.g.:
+   hold runtime state and aren't tracked in git). From inside the cloned
+   repo directory, skipping any that belong to a service you removed:
    ```
-   mkdir -p ~/docker/plex/config ~/docker/plex/transcode
-   mkdir -p ~/docker/wireguard
-   mkdir -p ~/docker/pihole/etc-pihole ~/docker/pihole/etc-dnsmasq.d
-   mkdir -p ~/docker/caddy/data ~/docker/caddy/config
+   mkdir -p plex/config plex/transcode
+   mkdir -p wireguard
+   mkdir -p pihole/etc-pihole pihole/etc-dnsmasq.d
+   mkdir -p caddy/data caddy/config
+   mkdir -p gluetun qbittorrent prowlarr radarr sonarr
    sudo mkdir -p /srv/general-share && sudo chown "$(id -un):$(id -gn)" /srv/general-share
    ```
-   (skip any that belong to a service you removed; add more as needed for
-   Prowlarr/Radarr/Sonarr/qBittorrent if you're keeping those)
 
 ### 3. Fill in credentials as you go
 
@@ -210,8 +210,10 @@ data, etc.) should be tarballs, not git — git only tracks the "recipe"
 (`compose.yaml` + plain-text configs with no secrets), not runtime state.
 
 ```
-sudo tar -czvf ~/docker-backup-$(date +%Y%m%d).tar.gz -C ~ docker
+sudo tar -czvf ~/backup-$(date +%Y%m%d).tar.gz -C ~ <repo-directory-name>
 ```
+(replace `<repo-directory-name>` with whatever you named the cloned repo
+directory, e.g. `docker` or `homeserver`)
 
 Store this off the server (another device, external drive) — a backup
 sitting only on the server doesn't help if the server itself fails.
