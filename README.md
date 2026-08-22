@@ -42,7 +42,7 @@ Quick Sync) I haven't confirmed I have.
 | ddclient   | Keeps a dynamic DNS hostname updated       | A DDNS provider account (e.g. No-IP) — skip if you have a static public IP or don't need remote access |
 | gluetun + qBittorrent | Torrent client routed through a VPN | A VPN provider account that supports it (see [gluetun's wiki](https://github.com/qdm12/gluetun/wiki) for supported providers and credential format — varies by provider) |
 | Prowlarr / Radarr / Sonarr | Automated media search & management | Nothing to start; each generates its own API key on first run |
-| Homepage   | Dashboard linking all of the above        | Nothing extra — reuses the above |
+| Homepage   | Dashboard linking all of the above        | Nothing extra to start — reuses the above (optional: a free [Finnhub](https://finnhub.io/register) key for the stock widget, a Google Calendar ICS URL for the calendar widget) |
 
 None of these depend on each other except: Caddy assumes you're using
 Pi-hole (or some other local DNS) to resolve your chosen local hostnames;
@@ -90,6 +90,9 @@ of things are hardware/environment-dependent — check what applies to you:
      you're not using ddclient)
    - `samba/smb.conf.example` → `samba/smb.conf` (skip if you're not using
      Samba) — see "Setting up your own Samba users" below
+   - `homepage/config/*.yaml.example` → strip the `.example` suffix from
+     each (`services.yaml`, `widgets.yaml`, `bookmarks.yaml`, `settings.yaml`,
+     `docker.yaml`) — the dashboard config; see "Homepage" below
 3. Create the host directories each service you're keeping needs (these
    hold runtime state and aren't tracked in git). From inside the cloned
    repo directory, skipping any that belong to a service you removed:
@@ -202,6 +205,29 @@ change all of them together, to whatever names/number of users you want):
 **ddclient**
 - Only pushes an update when your public IP actually changes — seeing
   "nochg" in the logs is success, not an error.
+
+**Homepage**
+- `homepage/config/{services,widgets,bookmarks,settings,docker}.yaml` are
+  gitignored — this is where the dashboard actually gets personalized
+  (weather location, stock watchlist, bookmarks, local hostnames) and tends
+  to drift from anything worth committing. Start from the matching
+  `.example` files; `kubernetes.yaml` and `proxmox.yaml` are unused
+  generated stubs (this template doesn't run Kubernetes or Proxmox) and stay
+  tracked as-is.
+- The container needs `PUID=0`/`PGID=0` (root) to read the mounted
+  `docker.sock` for per-service container stats — see the comment in
+  `compose.yaml` for why (the image's entrypoint drops supplementary groups
+  when switching to a non-root PUID/PGID, so `group_add` alone doesn't
+  work). This is already set; no action needed unless you remove it.
+- Stock widget: set `FINNHUB_API_KEY` in `.env` and list symbols under
+  `widgets.yaml`'s `stocks.watchlist` (max 8). Finnhub's free tier covers
+  regular stocks/ETFs but not mutual funds (a `403` on that symbol from
+  their `/quote` endpoint means that's what you hit).
+- Calendar widget: set `GCAL_ICS_URL` in `.env` to your calendar's secret
+  iCal address (Google Calendar: Settings → your calendar → Integrate
+  calendar → "Secret address in iCal format") to fold it in alongside the
+  Sonarr/Radarr release calendars. Treat that URL like a password — it
+  grants read access to your calendar.
 
 ## Backup
 

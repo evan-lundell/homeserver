@@ -1,0 +1,43 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/info-widgets/
+
+- greeting:
+    text_size: xl
+    text: Welcome home
+
+- datetime:
+    text_size: xl
+    format:
+      dateStyle: long
+      timeStyle: short
+      hour12: true
+
+- openmeteo:
+    label: Your City
+    latitude: 0.0 # TODO: your latitude
+    longitude: 0.0 # TODO: your longitude
+    timezone: America/Chicago # TODO: your timezone
+    units: imperial # or metric
+    cache: 15
+
+- stocks:
+    provider: finnhub # needs FINNHUB_API_KEY in .env (free, see finnhub.io/register)
+    color: true
+    cache: 5
+    watchlist: # up to 8 symbols
+      - AAPL
+      - MSFT
+      - GOOGL
+      - AMZN
+
+- resources:
+    cpu: true
+    memory: true
+    disk:
+      - /
+      - /mnt/media
+
+- search:
+    provider: duckduckgo
+    target: _blank
