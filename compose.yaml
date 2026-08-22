@@ -39,11 +39,11 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      - WG_HOST=evanlundell.ddns.net
+      - WG_HOST=${DDNS_HOSTNAME}
       - PASSWORD_HASH=${WG_PASSWORD_HASH}
       - PGID=1000
       - PUID=1000
-      - WG_DEFAULT_DNS=192.168.1.17
+      - WG_DEFAULT_DNS=${SERVER_LAN_IP}
     volumes:
       - ./wireguard:/etc/wireguard
     cap_add:
@@ -157,8 +157,7 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - HOMEPAGE_ALLOWED_HOSTS=192.168.1.17:3000,dashboard.evan
-      - HOMEPAGE_ALLOWED_HOSTS=192.168.1.17:3000,dashboard.evan
+      - HOMEPAGE_ALLOWED_HOSTS=${SERVER_LAN_IP}:3000,dashboard.evan
       - HOMEPAGE_VAR_PLEX_TOKEN=${PLEX_TOKEN}
       - HOMEPAGE_VAR_RADARR_API_KEY=${RADARR_API_KEY}
       - HOMEPAGE_VAR_QBITTORRENT_USERNAME=${QBITTORRENT_USERNAME}
@@ -166,6 +165,7 @@ services:
       - HOMEPAGE_VAR_PIHOLE_PASSWORD=${PIHOLE_PASSWORD}
       - HOMEPAGE_VAR_WG_PASSWORD=${WG_ADMIN_PASSWORD}
       - HOMEPAGE_VAR_SONARR_API_KEY=${SONARR_API_KEY}
+      - HOMEPAGE_VAR_SERVER_IP=${SERVER_LAN_IP}
     volumes:
       - ./homepage/config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro

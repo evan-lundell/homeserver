@@ -44,7 +44,7 @@
         description: Network-wide ad blocking
         widget:
           type: pihole
-          url: http://192.168.1.17:8080
+          url: http://{{HOMEPAGE_VAR_SERVER_IP}}:8080
           key: "{{HOMEPAGE_VAR_PIHOLE_PASSWORD}}"
           version: 6
     - WireGuard:
@@ -52,7 +52,7 @@
         description: VPN
         widget:
           type: wgeasy
-          url: http://192.168.1.17:51821
+          url: http://{{HOMEPAGE_VAR_SERVER_IP}}:51821
           password: "{{HOMEPAGE_VAR_WG_PASSWORD}}"
         threshold: 2
 

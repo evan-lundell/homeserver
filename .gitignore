@@ -19,6 +19,9 @@ caddy/config/
 # ddclient — contains No-IP credentials directly
 ddclient/ddclient.conf
 
+# Samba — real usernames/shares/paths are specific to each setup
+samba/smb.conf
+
 # gluetun - runtime state, cached server lists
 gluetun/
 

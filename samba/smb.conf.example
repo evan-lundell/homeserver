@@ -19,17 +19,20 @@
    client min protocol = SMB2
    server min protocol = SMB2
 
+# One stanza per share you mount into the samba container in compose.yaml.
+# `valid users` / `write list` must list actual usernames, matching the
+# `-u "name;password"` entries in compose.yaml's samba `command:` block.
 [media]
    path = /media
    browsable = yes
    read only = no
    guest ok = no
-   valid users = evan
+   valid users = user1
 
 [general]
    path = /general
    browsable = yes
    read only = no
    guest ok = no
-   valid users = evan, karla
-   write list = evan, karla
+   valid users = user1, user2
+   write list = user1, user2
