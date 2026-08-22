@@ -2,6 +2,7 @@
 # For configuration options and examples, please see:
 # https://gethomepage.dev/configs/settings/
 
+headerStyle: clean
+
 providers:
-  openweathermap: openweathermapapikey
-  weatherapi: weatherapiapikey
+  finnhub: "{{HOMEPAGE_VAR_FINNHUB_API_KEY}}"

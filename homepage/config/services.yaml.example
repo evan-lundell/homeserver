@@ -1,0 +1,140 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/services/
+
+- Media:
+    - Plex:
+        icon: plex
+        href: http://plex.evan/web
+        description: Media server
+        server: my-docker
+        container: plex
+        widget:
+          type: plex
+          url: http://plex.evan
+          key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
+
+- Downloads:
+    - qBittorrent:
+        icon: qbittorrent
+        href: http://qbittorrent.evan
+        description: Download client (behind VPN)
+        server: my-docker
+        container: qbittorrent
+        widget:
+          type: qbittorrent
+          url: http://gluetun:8081
+          username: "{{HOMEPAGE_VAR_QBITTORRENT_USERNAME}}"
+          password: "{{HOMEPAGE_VAR_QBITTORRENT_PASSWORD}}"
+    - Radarr:
+        icon: radarr
+        href: http://radarr.evan
+        description: Movie automation
+        server: my-docker
+        container: radarr
+        widget:
+          type: radarr
+          url: http://radarr:7878
+          key: "{{HOMEPAGE_VAR_RADARR_API_KEY}}"
+    - Sonarr:
+        icon: sonarr
+        href: http://sonarr.evan
+        description: TV automation
+        server: my-docker
+        container: sonarr
+        widget:
+          type: sonarr
+          url: http://sonarr:8989
+          key: "{{HOMEPAGE_VAR_SONARR_API_KEY}}"
+    - Prowlarr:
+        icon: prowlarr
+        href: http://prowlarr.evan
+        description: Indexer manager
+        server: my-docker
+        container: prowlarr
+
+- Network:
+    - Pi-hole:
+        icon: pi-hole
+        href: http://pihole.evan/admin
+        description: Network-wide ad blocking
+        server: my-docker
+        container: pihole
+        widget:
+          type: pihole
+          url: http://{{HOMEPAGE_VAR_SERVER_IP}}:8080
+          key: "{{HOMEPAGE_VAR_PIHOLE_PASSWORD}}"
+          version: 6
+    - WireGuard:
+        icon: wireguard
+        href: http://wireguard.evan
+        description: VPN
+        server: my-docker
+        container: wireguard
+        widget:
+          type: wgeasy
+          url: http://{{HOMEPAGE_VAR_SERVER_IP}}:51821
+          password: "{{HOMEPAGE_VAR_WG_PASSWORD}}"
+        threshold: 2
+
+- Files:
+    - Samba:
+        icon: samba-server
+        href: smb://samba.evan/media
+        description: File shares
+        server: my-docker
+        container: samba
+
+- Calendar:
+    - Calendar:
+        icon: mdi-calendar-month
+        widget:
+          type: calendar
+          firstDayInWeek: sunday
+          view: monthly
+          maxEvents: 10
+          integrations:
+            - type: sonarr
+              service_group: Downloads
+              service_name: Sonarr
+              color: blue
+            - type: radarr
+              service_group: Downloads
+              service_name: Radarr
+              color: purple
+            - type: ical
+              url: "{{HOMEPAGE_VAR_GCAL_ICS_URL}}"
+              name: Google Calendar
+              color: teal
+
+- Fun:
+    - Hacker News:
+        icon: mdi-newspaper-variant-outline
+        href: https://news.ycombinator.com
+        description: Top tech / software engineering headlines
+        widget:
+          type: customapi
+          url: https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=8
+          refreshInterval: 1800000
+          display: dynamic-list
+          mappings:
+            items: hits
+            name: title
+            label: points
+            target: "https://news.ycombinator.com/item?id={objectID}"
+    - Joke of the Day:
+        icon: mdi-emoticon-happy-outline
+        href: https://official-joke-api.appspot.com
+        description: A random dad joke, refreshed hourly
+        widget:
+          type: customapi
+          url: https://official-joke-api.appspot.com/random_joke
+          refreshInterval: 3600000
+          display: list
+          mappings:
+            - field: setup
+              label: Setup
+              format: text
+            - field: punchline
+              label: Punchline
+              format: text

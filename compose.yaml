@@ -155,8 +155,13 @@ services:
     container_name: homepage
     restart: unless-stopped
     environment:
-      - PUID=1000
-      - PGID=1000
+      # PUID/PGID=0 (root): the image's entrypoint uses `su-exec` to drop to
+      # PUID/PGID, which strips supplementary groups — so `group_add` for
+      # docker.sock's group can't survive it. Running as root is this image's
+      # documented fallback for exactly that case, and buys nothing extra to
+      # attack since docker.sock access is already host-root-equivalent.
+      - PUID=0
+      - PGID=0
       - HOMEPAGE_ALLOWED_HOSTS=${SERVER_LAN_IP}:3000,dashboard.evan
       - HOMEPAGE_VAR_PLEX_TOKEN=${PLEX_TOKEN}
       - HOMEPAGE_VAR_RADARR_API_KEY=${RADARR_API_KEY}
@@ -166,6 +171,8 @@ services:
       - HOMEPAGE_VAR_WG_PASSWORD=${WG_ADMIN_PASSWORD}
       - HOMEPAGE_VAR_SONARR_API_KEY=${SONARR_API_KEY}
       - HOMEPAGE_VAR_SERVER_IP=${SERVER_LAN_IP}
+      - HOMEPAGE_VAR_GCAL_ICS_URL=${GCAL_ICS_URL}
+      - HOMEPAGE_VAR_FINNHUB_API_KEY=${FINNHUB_API_KEY}
     volumes:
       - ./homepage/config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro

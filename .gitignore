@@ -37,5 +37,13 @@ radarr/
 # sonarr — runtime config, API keys
 sonarr/
 
-# Homepage — logs and any cached/runtime state (config itself is safe, tracked separately below)
+# Homepage — dashboard config is personalized (weather location, stock
+# watchlist, bookmarks) — start from the .example files
+# (kubernetes.yaml/proxmox.yaml are unused generated stubs, not personalized
+# config, so they're left tracked as-is)
+homepage/config/services.yaml
+homepage/config/widgets.yaml
+homepage/config/bookmarks.yaml
+homepage/config/settings.yaml
+homepage/config/docker.yaml
 homepage/config/logs/
