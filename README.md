@@ -243,3 +243,7 @@ directory, e.g. `docker` or `homeserver`)
 
 Store this off the server (another device, external drive) — a backup
 sitting only on the server doesn't help if the server itself fails.
+
+For an automated, much smaller alternative that only backs up hand-edited
+config (not runtime state/databases) and a script that restores it onto a
+fresh clone, see `scripts/README.md`.

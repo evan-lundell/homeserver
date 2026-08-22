@@ -22,6 +22,9 @@ ddclient/ddclient.conf
 # Samba — real usernames/shares/paths are specific to each setup
 samba/smb.conf
 
+# Maintenance sudoers rule — contains your actual Linux username
+scripts/homeserver-maintenance.sudoers
+
 # gluetun - runtime state, cached server lists
 gluetun/
 
