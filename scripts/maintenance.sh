@@ -25,7 +25,8 @@ BACKUP_PATHS=(
     .env
     ddclient/ddclient.conf
     samba/smb.conf
-    wireguard
+    wireguard/wg0.conf
+    wireguard/wg0.json
     homepage/config/services.yaml
     homepage/config/widgets.yaml
     homepage/config/bookmarks.yaml
@@ -37,17 +38,39 @@ BACKUP_PATHS=(
 log "--- Checking config backup ---"
 cd "$REPO" || { log "FATAL: cannot cd to $REPO"; exit 1; }
 
+# Stage a readable copy of everything before archiving it. wg0.conf/wg0.json
+# are root-owned (wg-easy writes them as root inside the container) so evan
+# can't read them directly; pull those two via the narrow `sudo cat` grant
+# in homeserver-maintenance.sudoers instead of reading them in place.
+STAGE_DIR="$STATE_DIR/stage"
+rm -rf "$STAGE_DIR"
+mkdir -p "$STAGE_DIR"
+chmod 700 "$STAGE_DIR"
+
 EXISTING_PATHS=()
 for p in "${BACKUP_PATHS[@]}"; do
-    [ -e "$p" ] && EXISTING_PATHS+=("$p")
+    [ -e "$p" ] || continue
+    if [[ "$p" == wireguard/* ]]; then
+        mkdir -p "$STAGE_DIR/wireguard"
+        if sudo -n cat "$REPO/$p" > "$STAGE_DIR/$p" 2>>"$LOGFILE"; then
+            chmod 600 "$STAGE_DIR/$p"
+            EXISTING_PATHS+=("$p")
+        else
+            log "WARN: sudo cat $p failed, excluding from this backup"
+            rm -f "$STAGE_DIR/$p"
+        fi
+    else
+        cp --parents -p "$p" "$STAGE_DIR"/
+        EXISTING_PATHS+=("$p")
+    fi
 done
 
-NEW_HASH=$(tar -cf - -C "$REPO" "${EXISTING_PATHS[@]}" 2>>"$LOGFILE" | sha256sum | awk '{print $1}')
+NEW_HASH=$(tar -cf - -C "$STAGE_DIR" "${EXISTING_PATHS[@]}" 2>>"$LOGFILE" | sha256sum | awk '{print $1}')
 OLD_HASH=$(cat "$HASH_FILE" 2>/dev/null || echo "")
 
 if [ "$NEW_HASH" != "$OLD_HASH" ]; then
     BACKUP_FILE="$BACKUP_DIR/config-backup-$DATE.tar.gz"
-    tar -czf "$BACKUP_FILE" -C "$REPO" "${EXISTING_PATHS[@]}" >> "$LOGFILE" 2>&1
+    tar -czf "$BACKUP_FILE" -C "$STAGE_DIR" "${EXISTING_PATHS[@]}" >> "$LOGFILE" 2>&1
     echo "$NEW_HASH" > "$HASH_FILE"
     log "Config changed, wrote $BACKUP_FILE"
     # Keep the last 10 config backups
@@ -55,6 +78,8 @@ if [ "$NEW_HASH" != "$OLD_HASH" ]; then
 else
     log "No config changes since last backup, skipping"
 fi
+
+rm -rf "$STAGE_DIR"
 
 # 2. OS package updates
 log "--- Updating OS packages ---"
@@ -70,12 +95,24 @@ if [ $? -ne 0 ]; then
 fi
 
 # 3. Pull latest Docker images
+#    `compose pull` fires every image pull in parallel, which occasionally
+#    trips a burst rate limit on lscr.io/ghcr.io (their own retry-after has
+#    been sub-millisecond when this happens, i.e. a transient blip, not a
+#    real quota problem) - retry a few times with a short backoff before
+#    giving up on the run.
 log "--- Pulling Docker images ---"
-docker compose pull >> "$LOGFILE" 2>&1
-if [ $? -ne 0 ]; then
-    log "FATAL: docker compose pull failed, aborting run"
-    exit 1
-fi
+PULL_ATTEMPTS=3
+PULL_DELAY=15
+n=1
+until docker compose pull >> "$LOGFILE" 2>&1; do
+    if [ "$n" -ge "$PULL_ATTEMPTS" ]; then
+        log "FATAL: docker compose pull failed after $PULL_ATTEMPTS attempts, aborting run"
+        exit 1
+    fi
+    log "docker compose pull failed (attempt $n/$PULL_ATTEMPTS), retrying in ${PULL_DELAY}s"
+    sleep "$PULL_DELAY"
+    n=$((n+1))
+done
 
 # 4. Recreate containers with new images
 log "--- Recreating containers ---"
