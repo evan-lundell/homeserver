@@ -53,7 +53,7 @@
         server: my-docker
         container: prowlarr
 
-- Network:
+- Infrastructure:
     - Pi-hole:
         icon: pi-hole
         href: http://pihole.evan/admin
@@ -76,8 +76,6 @@
           url: http://{{HOMEPAGE_VAR_SERVER_IP}}:51821
           password: "{{HOMEPAGE_VAR_WG_PASSWORD}}"
         threshold: 2
-
-- Monitoring:
     - Uptime Kuma:
         icon: uptime-kuma
         href: http://uptime.evan
@@ -88,8 +86,6 @@
           type: uptimekuma
           url: http://uptime-kuma:3001
           slug: default
-
-- Files:
     - Samba:
         icon: samba-server
         href: smb://samba.evan/media

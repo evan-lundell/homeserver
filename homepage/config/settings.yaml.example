@@ -4,5 +4,22 @@
 
 headerStyle: clean
 
+layout:
+  Media:
+    style: row
+    columns: 1
+  Downloads:
+    style: row
+    columns: 4
+  Infrastructure:
+    style: row
+    columns: 4
+  Calendar:
+    style: column
+    columns: 1
+  Fun:
+    style: column
+    columns: 2
+
 providers:
   finnhub: "{{HOMEPAGE_VAR_FINNHUB_API_KEY}}"
