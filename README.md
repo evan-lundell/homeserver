@@ -42,14 +42,15 @@ Quick Sync) I haven't confirmed I have.
 | ddclient   | Keeps a dynamic DNS hostname updated       | A DDNS provider account (e.g. No-IP) — skip if you have a static public IP or don't need remote access |
 | gluetun + qBittorrent | Torrent client routed through a VPN | A VPN provider account that supports it (see [gluetun's wiki](https://github.com/qdm12/gluetun/wiki) for supported providers and credential format — varies by provider) |
 | Prowlarr / Radarr / Sonarr | Automated media search & management | Nothing to start; each generates its own API key on first run |
+| FlareSolverr | Solves Cloudflare challenges for Prowlarr indexers that need it | Nothing — no account, no config |
 | Homepage   | Dashboard linking all of the above        | Nothing extra to start — reuses the above (optional: a free [Finnhub](https://finnhub.io/register) key for the stock widget, a Google Calendar ICS URL for the calendar widget) |
 | Uptime Kuma | Uptime monitoring/alerting for your other services | Nothing external — admin account is created in its UI on first visit |
 
 None of these depend on each other except: Caddy assumes you're using
 Pi-hole (or some other local DNS) to resolve your chosen local hostnames;
-qBittorrent depends on gluetun (`network_mode: "service:gluetun"`); and
-Homepage's dashboard widgets need whatever API keys/passwords the services
-they point at were given.
+qBittorrent, Prowlarr, and FlareSolverr depend on gluetun
+(`network_mode: "service:gluetun"`); and Homepage's dashboard widgets need
+whatever API keys/passwords the services they point at were given.
 
 ## Setup walkthrough
 
@@ -230,6 +231,21 @@ change all of them together, to whatever names/number of users you want):
   calendar → "Secret address in iCal format") to fold it in alongside the
   Sonarr/Radarr release calendars. Treat that URL like a password — it
   grants read access to your calendar.
+
+**FlareSolverr**
+- Only needed if a specific Prowlarr indexer starts failing with a
+  Cloudflare challenge error. Runs behind gluetun
+  (`network_mode: "service:gluetun"`) like Prowlarr/qBittorrent, so its
+  solved-challenge traffic goes out the same VPN IP Prowlarr's own indexer
+  requests use — running it outside gluetun risks an IP mismatch that makes
+  Cloudflare re-challenge, and defeats the point of routing indexer traffic
+  through the VPN.
+- No web UI worth linking (hitting it returns raw JSON) and no widget type
+  in Homepage, so it isn't on the dashboard.
+- To wire it up: in Prowlarr, go to Settings → Indexers → Indexer Proxies,
+  add a FlareSolverr proxy with host `http://localhost:8191` (shared
+  network namespace with Prowlarr, so `localhost` — not a container name —
+  is what resolves), then set the affected indexer(s) to use it.
 
 **Uptime Kuma**
 - On first visit to `http://uptime.evan` (or `localhost:3001`) you'll be

@@ -125,7 +125,7 @@ fi
 # 5. gluetun-dependent containers need explicit recreation
 #    in case gluetun itself got a new image (network namespace gets recreated)
 log "--- Ensuring gluetun-dependent containers are in sync ---"
-docker compose up -d gluetun qbittorrent prowlarr >> "$LOGFILE" 2>&1
+docker compose up -d gluetun qbittorrent prowlarr flaresolverr >> "$LOGFILE" 2>&1
 
 # 6. Clean up old unused images, but leave anything from today alone so
 #    a same-day rollback (docker compose down && re-pull old tag) is

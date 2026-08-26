@@ -138,6 +138,17 @@ services:
     depends_on:
       - gluetun
 
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    restart: unless-stopped
+    network_mode: "service:gluetun"
+    environment:
+      - LOG_LEVEL=info
+      - TZ=America/Chicago
+    depends_on:
+      - gluetun
+
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
