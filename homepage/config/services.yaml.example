@@ -77,6 +77,18 @@
           password: "{{HOMEPAGE_VAR_WG_PASSWORD}}"
         threshold: 2
 
+- Monitoring:
+    - Uptime Kuma:
+        icon: uptime-kuma
+        href: http://uptime.evan
+        description: Service uptime monitoring
+        server: my-docker
+        container: uptime-kuma
+        widget:
+          type: uptimekuma
+          url: http://uptime-kuma:3001
+          slug: default
+
 - Files:
     - Samba:
         icon: samba-server

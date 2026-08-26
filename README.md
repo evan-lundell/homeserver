@@ -43,6 +43,7 @@ Quick Sync) I haven't confirmed I have.
 | gluetun + qBittorrent | Torrent client routed through a VPN | A VPN provider account that supports it (see [gluetun's wiki](https://github.com/qdm12/gluetun/wiki) for supported providers and credential format — varies by provider) |
 | Prowlarr / Radarr / Sonarr | Automated media search & management | Nothing to start; each generates its own API key on first run |
 | Homepage   | Dashboard linking all of the above        | Nothing extra to start — reuses the above (optional: a free [Finnhub](https://finnhub.io/register) key for the stock widget, a Google Calendar ICS URL for the calendar widget) |
+| Uptime Kuma | Uptime monitoring/alerting for your other services | Nothing external — admin account is created in its UI on first visit |
 
 None of these depend on each other except: Caddy assumes you're using
 Pi-hole (or some other local DNS) to resolve your chosen local hostnames;
@@ -102,6 +103,7 @@ of things are hardware/environment-dependent — check what applies to you:
    mkdir -p pihole/etc-pihole pihole/etc-dnsmasq.d
    mkdir -p caddy/data caddy/config
    mkdir -p gluetun qbittorrent prowlarr radarr sonarr
+   mkdir -p uptime-kuma
    sudo mkdir -p /srv/general-share && sudo chown "$(id -un):$(id -gn)" /srv/general-share
    ```
 
@@ -228,6 +230,18 @@ change all of them together, to whatever names/number of users you want):
   calendar → "Secret address in iCal format") to fold it in alongside the
   Sonarr/Radarr release calendars. Treat that URL like a password — it
   grants read access to your calendar.
+
+**Uptime Kuma**
+- On first visit to `http://uptime.evan` (or `localhost:3001`) you'll be
+  prompted to create an admin account — this happens in its own UI, not via
+  `.env`.
+- Add a monitor for each service you want tracked (e.g. `http://plex.evan`,
+  `http://radarr.evan`).
+- The Homepage widget reads from a **status page**, not raw monitors: in
+  Uptime Kuma, go to Status Pages, add your monitors to the default page (or
+  create a new one), and match its slug in `services.yaml`'s `uptimekuma`
+  widget (defaults to `default` here). Skip the `widget:` block if you don't
+  want this.
 
 ## Backup
 

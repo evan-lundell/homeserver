@@ -31,3 +31,7 @@ http://dashboard.evan {
 http://sonarr.evan {
     reverse_proxy localhost:8989
 }
+
+http://uptime.evan {
+    reverse_proxy localhost:3001
+}

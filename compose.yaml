@@ -195,3 +195,14 @@ services:
       - /mnt/media/Plex:/data
     ports:
       - "8989:8989"
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    environment:
+      - TZ=America/Chicago
+    volumes:
+      - ./uptime-kuma:/app/data
+    ports:
+      - "3001:3001"
