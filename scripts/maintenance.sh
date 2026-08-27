@@ -98,9 +98,11 @@ fi
 #    `compose pull` fires every image pull in parallel, which occasionally
 #    trips a burst rate limit on lscr.io/ghcr.io (their own retry-after has
 #    been sub-millisecond when this happens, i.e. a transient blip, not a
-#    real quota problem) - retry a few times with a short backoff before
-#    giving up on the run.
+#    real quota problem). Capping concurrency keeps the burst small enough
+#    to avoid the throttle in the first place; the retry loop below is just
+#    a safety net for when it still happens.
 log "--- Pulling Docker images ---"
+export COMPOSE_PARALLEL_LIMIT=4
 PULL_ATTEMPTS=3
 PULL_DELAY=15
 n=1
