@@ -35,6 +35,7 @@ Quick Sync) I haven't confirmed I have.
 | Service    | Purpose                                | Needs an account/credential for |
 |------------|------------------------------------------|-----------------------------------|
 | Plex       | Media server                              | A free Plex account (claim token) |
+| Jellyfin   | Media server (open-source Plex alternative) | Nothing — admin account and libraries are set up in its own first-run wizard |
 | Samba      | File shares over your LAN                 | Just usernames/passwords you pick |
 | Pi-hole    | Network-wide DNS ad-blocking + local DNS  | Nothing external |
 | Caddy      | Reverse proxy for clean local hostnames   | Nothing (works alongside Pi-hole) |
@@ -67,21 +68,21 @@ You need a Linux host (this has been run on Debian; other distros work
 similarly) with Docker and Docker Compose installed. Beyond that, a couple
 of things are hardware/environment-dependent — check what applies to you:
 
-- **Plex hardware transcoding**: if your CPU has Intel Quick Sync and you
-  want hardware-accelerated transcoding, install
+- **Plex/Jellyfin hardware transcoding**: if your CPU has Intel Quick Sync
+  and you want hardware-accelerated transcoding, install
   `intel-media-va-driver-non-free` on the host (the `/dev/dri` device
-  passthrough is already in `compose.yaml`). If not, either remove the
-  `devices:` entry under `plex` or leave it — Plex falls back to software
-  transcoding if the device isn't usable.
+  passthrough is already in `compose.yaml` for both). If not, either remove
+  the `devices:` entry under `plex`/`jellyfin` or leave it — both fall back
+  to software transcoding if the device isn't usable.
 - **Plex + USB devices**: the `/dev/bus/usb` passthrough is there to avoid a
   `libusb_init failed` crash some setups hit; if you don't need it you can
   remove it.
 - **Media storage**: mount your media drive(s) wherever makes sense for
   your setup, then update the volume paths in `compose.yaml` (`plex`,
-  `radarr`, `sonarr`, `qbittorrent`, `homepage`, and the `samba` `[media]`
-  share) to match. There's nothing filesystem-specific required, but if
-  you're on NTFS via NTFS-3G and Samba writes are misbehaving, see the
-  Samba note below.
+  `jellyfin`, `radarr`, `sonarr`, `qbittorrent`, `homepage`, and the `samba`
+  `[media]` share) to match. There's nothing filesystem-specific required,
+  but if you're on NTFS via NTFS-3G and Samba writes are misbehaving, see
+  the Samba note below.
 
 ### 2. Clone and configure
 
@@ -100,6 +101,7 @@ of things are hardware/environment-dependent — check what applies to you:
    repo directory, skipping any that belong to a service you removed:
    ```
    mkdir -p plex/config plex/transcode
+   mkdir -p jellyfin/config
    mkdir -p wireguard
    mkdir -p pihole/etc-pihole pihole/etc-dnsmasq.d
    mkdir -p caddy/data caddy/config
@@ -112,6 +114,11 @@ of things are hardware/environment-dependent — check what applies to you:
 
 - **Plex**: get a fresh claim token from https://plex.tv/claim (expires in
   4 minutes) and set it right before first start.
+- **Jellyfin**: no account needed — start it (`docker compose up -d
+  jellyfin`), open its web UI, and complete the first-run setup wizard
+  (admin user + media library paths). If you want it on Homepage's
+  dashboard, generate an API key afterward in Dashboard → Advanced → API
+  Keys, then put it in `.env` and restart Homepage.
 - **Samba**: pick usernames/passwords — see "Setting up your own Samba
   users" below.
 - **Pi-hole**: pick a password for `PIHOLE_PASSWORD` — no external account
@@ -161,6 +168,15 @@ docker compose up -d
 - Media paths are whatever you mounted in step 1 — just keep the container
   paths (`/data/movies`, `/data/shows`, etc.) consistent with what Radarr/
   Sonarr expect if you're using those too.
+
+**Jellyfin**
+- Deliberately mounts media read-only (`:ro`) here since it's meant to run
+  alongside Plex without either touching the other's data — Jellyfin only
+  needs to read/stream, never write. Drop the `:ro` if you end up making
+  Jellyfin your primary server.
+- No official client app for Meta Quest (only community VR projects,
+  sideloaded); Fire TV/Android TV has an official one from the Amazon
+  Appstore.
 
 **Samba**
 - Ships with a custom `smb.conf` rather than the image's auto-generated

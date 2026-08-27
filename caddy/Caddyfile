@@ -3,6 +3,10 @@ http://plex.evan {
     reverse_proxy localhost:32400
 }
 
+http://jellyfin.evan {
+    reverse_proxy localhost:8096
+}
+
 http://pihole.evan {
     redir / /admin
     reverse_proxy localhost:8080

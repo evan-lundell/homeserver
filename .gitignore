@@ -5,6 +5,9 @@
 plex/config/
 plex/transcode/
 
+# Jellyfin — large binary database, auth tokens, watch history (like Plex)
+jellyfin/config/
+
 # WireGuard — actual private keys for every peer
 wireguard/
 
