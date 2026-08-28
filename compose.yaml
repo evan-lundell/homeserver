@@ -97,10 +97,17 @@ services:
     devices:
       - /dev/net/tun:/dev/net/tun
     environment:
-      - VPN_SERVICE_PROVIDER=expressvpn
-      - OPENVPN_USER=${EXPRESSVPN_USER}
-      - OPENVPN_PASSWORD=${EXPRESSVPN_PASSWORD}
-      - SERVER_COUNTRIES=USA
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${PROTONVPN_WIREGUARD_PRIVATE_KEY}
+      - SERVER_COUNTRIES=United States
+      - VPN_PORT_FORWARDING=on
+      # Pushes the forwarded port into qBittorrent's own listen-port setting
+      # whenever it changes, since qBittorrent has no native awareness of
+      # gluetun's port forwarding. Requires qBittorrent's WebUI setting
+      # "Bypass authentication for clients on localhost" to be enabled.
+      - 'VPN_PORT_FORWARDING_UP_COMMAND=/bin/sh -c ''wget -O- -nv --retry-connrefused --post-data "json={\"listen_port\":{{PORT}},\"current_network_interface\":\"{{VPN_INTERFACE}}\",\"random_port\":false,\"upnp\":false}" http://127.0.0.1:8081/api/v2/app/setPreferences'''
+      - 'VPN_PORT_FORWARDING_DOWN_COMMAND=/bin/sh -c ''wget -O- -nv --retry-connrefused --post-data "json={\"listen_port\":0,\"current_network_interface\":\"lo\"}" http://127.0.0.1:8081/api/v2/app/setPreferences'''
     volumes:
       - ./gluetun:/gluetun
     ports:

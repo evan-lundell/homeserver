@@ -131,9 +131,16 @@ of things are hardware/environment-dependent — check what applies to you:
   `.env` (used for WireGuard's public address) — and `SERVER_LAN_IP` to
   your server's static/reserved LAN IP (used for WireGuard's DNS setting
   and Homepage's allowed hosts).
-- **gluetun**: set `VPN_SERVICE_PROVIDER` in `compose.yaml` to your
-  provider and fill in whatever credentials that provider needs (varies —
-  check gluetun's wiki linked above).
+- **gluetun**: configured for ProtonVPN over WireGuard with port forwarding
+  on. Generate a WireGuard config at
+  https://account.proton.me/u/0/vpn/WireGuard (check "NAT-PMP (Port
+  Forwarding)" first) and put its private key in `.env` as
+  `PROTONVPN_WIREGUARD_PRIVATE_KEY`. Also enable qBittorrent's WebUI setting
+  "Bypass authentication for clients on localhost" — gluetun pushes the
+  forwarded port to qBittorrent's API on that assumption. Switching to a
+  different provider means changing `VPN_SERVICE_PROVIDER` (and likely
+  `VPN_TYPE`/credentials) in `compose.yaml` — see gluetun's wiki linked
+  above for that provider's format.
 - **Radarr / Sonarr**: these generate their own API key on first run. Start
   them (`docker compose up -d radarr sonarr`), open their web UIs, copy the
   API key from Settings → General, then put it in `.env` and restart
