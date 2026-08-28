@@ -34,12 +34,11 @@ echo "Config files restored."
 
 # Everything else compose.yaml bind-mounts but has no hand-edited config
 # for — these just need to exist empty. Each app self-initializes on first
-# `docker compose up -d` (fresh Plex library, new Radarr/Sonarr/Prowlarr API
-# keys, fresh Pi-hole blocklists, new Caddy certs, etc), so there's nothing
-# to restore for them, matching what maintenance.sh treats as regeneratable.
+# `docker compose up -d` (new Radarr/Sonarr/Prowlarr API keys, fresh
+# Pi-hole blocklists, new Caddy certs, etc), so there's nothing to restore
+# for them, matching what maintenance.sh treats as regeneratable.
 RUNTIME_DIRS=(
-    plex/config
-    plex/transcode
+    jellyfin/config
     pihole/etc-pihole
     pihole/etc-dnsmasq.d
     caddy/data
@@ -84,7 +83,8 @@ Done. Before "docker compose up -d":
   - Confirm /mnt/media and /srv/general-share (if used) are mounted.
 
 After first boot, these come up fresh and need manual attention:
-  - Plex: re-claim the server and re-add libraries.
+  - Jellyfin: complete the first-run setup wizard (admin user + media
+    library paths).
   - Radarr / Sonarr: generate new API keys on first run — update
     RADARR_API_KEY / SONARR_API_KEY in .env to match, then
     `docker compose up -d homepage` to pick them up.

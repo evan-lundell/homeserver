@@ -1,21 +1,4 @@
 services:
-  plex:
-    image: plexinc/pms-docker:latest
-    container_name: plex
-    restart: unless-stopped
-    network_mode: host
-    devices:
-      - /dev/dri:/dev/dri
-      - /dev/bus/usb:/dev/bus/usb
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/Chicago
-    volumes:
-      - ./plex/config:/config
-      - ./plex/transcode:/transcode
-      - /mnt/media/Plex:/data
-
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
@@ -192,7 +175,6 @@ services:
       - PUID=0
       - PGID=0
       - HOMEPAGE_ALLOWED_HOSTS=${SERVER_LAN_IP}:3000,dashboard.evan
-      - HOMEPAGE_VAR_PLEX_TOKEN=${PLEX_TOKEN}
       - HOMEPAGE_VAR_JELLYFIN_API_KEY=${JELLYFIN_API_KEY}
       - HOMEPAGE_VAR_RADARR_API_KEY=${RADARR_API_KEY}
       - HOMEPAGE_VAR_QBITTORRENT_USERNAME=${QBITTORRENT_USERNAME}

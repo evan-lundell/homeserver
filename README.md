@@ -1,6 +1,6 @@
 # Home Server (Docker Compose Template)
 
-A Docker Compose template for a self-hosted home server: media (Plex),
+A Docker Compose template for a self-hosted home server: media (Jellyfin),
 file sharing (Samba), ad-blocking DNS (Pi-hole), a reverse proxy for clean
 local hostnames (Caddy), remote access (WireGuard), dynamic DNS (ddclient),
 and an optional automated media stack (Prowlarr/Radarr/Sonarr/qBittorrent
@@ -34,8 +34,7 @@ Quick Sync) I haven't confirmed I have.
 
 | Service    | Purpose                                | Needs an account/credential for |
 |------------|------------------------------------------|-----------------------------------|
-| Plex       | Media server                              | A free Plex account (claim token) |
-| Jellyfin   | Media server (open-source Plex alternative) | Nothing — admin account and libraries are set up in its own first-run wizard |
+| Jellyfin   | Media server                              | Nothing — admin account and libraries are set up in its own first-run wizard |
 | Samba      | File shares over your LAN                 | Just usernames/passwords you pick |
 | Pi-hole    | Network-wide DNS ad-blocking + local DNS  | Nothing external |
 | Caddy      | Reverse proxy for clean local hostnames   | Nothing (works alongside Pi-hole) |
@@ -68,18 +67,15 @@ You need a Linux host (this has been run on Debian; other distros work
 similarly) with Docker and Docker Compose installed. Beyond that, a couple
 of things are hardware/environment-dependent — check what applies to you:
 
-- **Plex/Jellyfin hardware transcoding**: if your CPU has Intel Quick Sync
+- **Jellyfin hardware transcoding**: if your CPU has Intel Quick Sync
   and you want hardware-accelerated transcoding, install
   `intel-media-va-driver-non-free` on the host (the `/dev/dri` device
-  passthrough is already in `compose.yaml` for both). If not, either remove
-  the `devices:` entry under `plex`/`jellyfin` or leave it — both fall back
+  passthrough is already in `compose.yaml`). If not, either remove
+  the `devices:` entry under `jellyfin` or leave it — it falls back
   to software transcoding if the device isn't usable.
-- **Plex + USB devices**: the `/dev/bus/usb` passthrough is there to avoid a
-  `libusb_init failed` crash some setups hit; if you don't need it you can
-  remove it.
 - **Media storage**: mount your media drive(s) wherever makes sense for
-  your setup, then update the volume paths in `compose.yaml` (`plex`,
-  `jellyfin`, `radarr`, `sonarr`, `qbittorrent`, `homepage`, and the `samba`
+  your setup, then update the volume paths in `compose.yaml` (`jellyfin`,
+  `radarr`, `sonarr`, `qbittorrent`, `homepage`, and the `samba`
   `[media]` share) to match. There's nothing filesystem-specific required,
   but if you're on NTFS via NTFS-3G and Samba writes are misbehaving, see
   the Samba note below.
@@ -100,7 +96,6 @@ of things are hardware/environment-dependent — check what applies to you:
    hold runtime state and aren't tracked in git). From inside the cloned
    repo directory, skipping any that belong to a service you removed:
    ```
-   mkdir -p plex/config plex/transcode
    mkdir -p jellyfin/config
    mkdir -p wireguard
    mkdir -p pihole/etc-pihole pihole/etc-dnsmasq.d
@@ -112,8 +107,6 @@ of things are hardware/environment-dependent — check what applies to you:
 
 ### 3. Fill in credentials as you go
 
-- **Plex**: get a fresh claim token from https://plex.tv/claim (expires in
-  4 minutes) and set it right before first start.
 - **Jellyfin**: no account needed — start it (`docker compose up -d
   jellyfin`), open its web UI, and complete the first-run setup wizard
   (admin user + media library paths). If you want it on Homepage's
@@ -164,16 +157,10 @@ docker compose up -d
 
 ## Notes on specific services
 
-**Plex**
+**Jellyfin**
 - Media paths are whatever you mounted in step 1 — just keep the container
   paths (`/data/movies`, `/data/shows`, etc.) consistent with what Radarr/
   Sonarr expect if you're using those too.
-
-**Jellyfin**
-- Deliberately mounts media read-only (`:ro`) here since it's meant to run
-  alongside Plex without either touching the other's data — Jellyfin only
-  needs to read/stream, never write. Drop the `:ro` if you end up making
-  Jellyfin your primary server.
 - No official client app for Meta Quest (only community VR projects,
   sideloaded); Fire TV/Android TV has an official one from the Amazon
   Appstore.
@@ -215,7 +202,7 @@ change all of them together, to whatever names/number of users you want):
   use `http://` explicitly for them in the Caddyfile — Caddy's automatic
   HTTPS/Let's Encrypt provisioning fails for non-public TLDs and will loop
   retrying certificate issuance otherwise.
-- A service's redirect target (e.g. Plex needing `/web`, Pi-hole needing
+- A service's redirect target (e.g. Pi-hole needing
   `/admin`) is handled by Caddy's `redir` directive, but some browser/
   extension combinations are flaky about respecting `http://` on the
   redirect specifically. If a service seems to "not work" in one browser,
@@ -267,7 +254,7 @@ change all of them together, to whatever names/number of users you want):
 - On first visit to `http://uptime.evan` (or `localhost:3001`) you'll be
   prompted to create an admin account — this happens in its own UI, not via
   `.env`.
-- Add a monitor for each service you want tracked (e.g. `http://plex.evan`,
+- Add a monitor for each service you want tracked (e.g. `http://jellyfin.evan`,
   `http://radarr.evan`).
 - The Homepage widget reads from a **status page**, not raw monitors: in
   Uptime Kuma, go to Status Pages, add your monitors to the default page (or

@@ -3,16 +3,6 @@
 # https://gethomepage.dev/configs/services/
 
 - Media:
-    - Plex:
-        icon: plex
-        href: http://plex.evan/web
-        description: Media server
-        server: my-docker
-        container: plex
-        widget:
-          type: plex
-          url: http://plex.evan
-          key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
     - Jellyfin:
         icon: jellyfin
         href: http://jellyfin.evan

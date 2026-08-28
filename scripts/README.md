@@ -47,9 +47,9 @@ config, and this directory's sudoers rule. Backups land in
 past the last 10.
 
 This is deliberately *not* a full disaster-recovery backup — it skips every
-service's runtime state (Plex's library database, Radarr/Sonarr/Prowlarr
-config + API keys, Pi-hole's blocklists, qBittorrent's session, gluetun's
-server cache, Caddy's certs), since all of that is just as easy to
+service's runtime state (Radarr/Sonarr/Prowlarr config + API keys, Pi-hole's
+blocklists, qBittorrent's session, gluetun's server cache, Caddy's certs),
+since all of that is just as easy to
 regenerate by letting the app re-initialize on a fresh volume. See the
 top-level README's "Backup" section if you instead want a full tarball of
 everything, for exact-state disaster recovery rather than a clean rebuild.
@@ -74,6 +74,6 @@ yet.
 
 Because runtime state isn't backed up, several services come up as a fresh
 install and need one-time manual attention after first boot — `restore.sh`
-prints the list at the end (Plex re-claim/library re-add, new Radarr/Sonarr
-API keys to copy into `.env`, qBittorrent's temporary generated password,
-Pi-hole's custom DNS records).
+prints the list at the end (Jellyfin's first-run setup wizard, new
+Radarr/Sonarr API keys to copy into `.env`, qBittorrent's temporary
+generated password, Pi-hole's custom DNS records).
