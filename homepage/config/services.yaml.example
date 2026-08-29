@@ -93,6 +93,12 @@
         description: File shares
         server: my-docker
         container: samba
+    - Desktop:
+        icon: mdi-monitor
+        href: http://desktop.evan
+        description: Browser-based remote desktop (Firefox, Discord)
+        server: my-docker
+        container: webtop
 
 - Calendar:
     - Calendar:

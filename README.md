@@ -3,8 +3,9 @@
 A Docker Compose template for a self-hosted home server: media (Jellyfin),
 file sharing (Samba), ad-blocking DNS (Pi-hole), a reverse proxy for clean
 local hostnames (Caddy), remote access (WireGuard), dynamic DNS (ddclient),
-and an optional automated media stack (Prowlarr/Radarr/Sonarr/qBittorrent
-behind a VPN via gluetun), with a dashboard (Homepage) tying it together.
+an optional automated media stack (Prowlarr/Radarr/Sonarr/qBittorrent
+behind a VPN via gluetun), and a browser-based remote desktop (Webtop) with
+Discord, with a dashboard (Homepage) tying it together.
 
 **Every service below is independent and optional.** Nothing here requires
 running the whole stack — remove any service block from `compose.yaml` (and
@@ -45,6 +46,7 @@ Quick Sync) I haven't confirmed I have.
 | FlareSolverr | Solves Cloudflare challenges for Prowlarr indexers that need it | Nothing — no account, no config |
 | Homepage   | Dashboard linking all of the above        | Nothing extra to start — reuses the above (optional: a free [Finnhub](https://finnhub.io/register) key for the stock widget, a Google Calendar ICS URL for the calendar widget) |
 | Uptime Kuma | Uptime monitoring/alerting for your other services | Nothing external — admin account is created in its UI on first visit |
+| Webtop (Desktop) | Thin remote desktop (Firefox + Discord) you log into through a browser | Nothing to start — Discord/browser logins happen inside the desktop itself, same as on any machine |
 
 None of these depend on each other except: Caddy assumes you're using
 Pi-hole (or some other local DNS) to resolve your chosen local hostnames;
@@ -102,6 +104,7 @@ of things are hardware/environment-dependent — check what applies to you:
    mkdir -p caddy/data caddy/config
    mkdir -p gluetun qbittorrent prowlarr radarr sonarr
    mkdir -p uptime-kuma
+   mkdir -p webtop/config
    sudo mkdir -p /srv/general-share && sudo chown "$(id -un):$(id -gn)" /srv/general-share
    ```
 
@@ -141,6 +144,9 @@ of things are hardware/environment-dependent — check what applies to you:
   different provider means changing `VPN_SERVICE_PROVIDER` (and likely
   `VPN_TYPE`/credentials) in `compose.yaml` — see gluetun's wiki linked
   above for that provider's format.
+- **Webtop**: pick a `WEBTOP_USERNAME`/`WEBTOP_PASSWORD` in `.env` — no
+  external account needed. See the Webtop notes below for what this auth
+  does and doesn't protect against.
 - **Radarr / Sonarr**: these generate their own API key on first run. Start
   them (`docker compose up -d radarr sonarr`), open their web UIs, copy the
   API key from Settings → General, then put it in `.env` and restart
@@ -151,6 +157,10 @@ of things are hardware/environment-dependent — check what applies to you:
 ```
 docker compose up -d
 ```
+
+(`webtop` is built from a local `Dockerfile` rather than pulled — the first
+`up -d` builds it automatically, but if you ever edit `webtop/Dockerfile`
+you'll need `docker compose up -d --build webtop` to pick up the change.)
 
 ### 5. Local hostnames (only if using Pi-hole + Caddy)
 
@@ -268,6 +278,133 @@ change all of them together, to whatever names/number of users you want):
   create a new one), and match its slug in `services.yaml`'s `uptimekuma`
   widget (defaults to `default` here). Skip the `widget:` block if you don't
   want this.
+
+**Webtop (Desktop)**
+- Built from `webtop/Dockerfile` (based on
+  `lscr.io/linuxserver/webtop:ubuntu-xfce`) rather than a pulled image, so
+  Firefox, Discord, and the GPU driver fix below all survive
+  `scripts/maintenance.sh`'s nightly `docker compose pull` — a locally
+  built image isn't affected by that pull, so this only changes when you
+  run `docker compose up -d --build webtop` yourself. The Dockerfile
+  layers on:
+  - **Firefox**, from Mozilla's own apt repo — Ubuntu's own `firefox` apt
+    package is just a snap-store stub that doesn't work in a container.
+  - **Discord**, official `.deb`, installed via `apt` so dependencies
+    resolve. Its Chromium sandbox wants a root-owned setuid helper that
+    isn't set up here — this container deliberately doesn't set
+    `seccomp:unconfined` (see below) — so the Dockerfile also patches both
+    of Discord's `.desktop` launchers to add `--no-sandbox` to their
+    `Exec=` line. This is already done for you; you don't need to think
+    about it unless you launch Discord manually from a terminal instead of
+    the Applications menu, in which case use `discord --no-sandbox` too.
+  - **`intel-media-va-driver-non-free`** in place of the default
+    `intel-media-va-driver` — see the GPU passthrough note below for why.
+- Open `https://desktop.evan` and you're into an XFCE desktop over KasmVNC —
+  no client software needed, just the `WEBTOP_USERNAME`/`WEBTOP_PASSWORD`
+  HTTP basic auth prompt from `.env`. That auth is linuxserver's own
+  built-in mechanism (`CUSTOM_USER`/`PASSWORD` env vars, enforced by the
+  embedded nginx) — good enough to keep it off casual LAN access, but **not
+  internet-grade**: the desktop's terminal has passwordless `sudo`, so
+  anyone who gets past that prompt can do anything on the container (and
+  probe your LAN from it). Don't forward this past your LAN/WireGuard; if
+  you ever do want it reachable from outside, put a proper reverse-proxy
+  auth layer (e.g. SWAG) in front rather than relying on this alone. Sign
+  into Firefox/Discord from inside the desktop same as you would on any
+  machine; those credentials then persist in `webtop/config` (gitignored)
+  across container restarts.
+- This is the **only** service in the Caddyfile on `https://` — KasmVNC's
+  login page hashes your password client-side with the browser's Web Crypto
+  API, which browsers only expose on a secure context (`https://`, or
+  literally `localhost`/`127.0.0.1`), so plain `http://desktop.evan` fails
+  with "this application requires a secure connection." `.evan` isn't a real
+  public TLD, so Caddy can't get a normal Let's Encrypt cert for it the way
+  it could for a real domain — instead this one site block uses Caddy's
+  built-in `tls internal` (a locally-generated, self-signed CA), which is
+  why only this service gets a browser cert warning. Everything else stays
+  on plain `http://` on purpose: it keeps sharing things like Jellyfin with
+  other people on your network friction-free, since they'd otherwise each
+  need to trust a custom CA just to load the page. Two ways to deal with the
+  warning on `desktop.evan`, since you're the only one who needs access:
+  - **Ignore it each visit** — click through ("Advanced" → "Proceed" in
+    Chrome, "Advanced" → "Accept the Risk and Continue" in Firefox). Zero
+    setup; you're still in a secure context once past the interstitial, and
+    the login works.
+  - **Trust the CA once per device** for a clean padlock going forward: the
+    cert lives at `./caddy/data/caddy/pki/authorities/local/root.crt` inside
+    the repo, owned by root since Caddy writes it — pull a copy out with
+    `docker cp caddy:/data/caddy/pki/authorities/local/root.crt
+    /srv/general-share/caddy-local-ca.crt` (already done; re-run this if
+    Caddy's CA ever regenerates) so it's grabbable from any device over the
+    Samba general share (`smb://samba.evan/general`). It's a public cert,
+    not a secret, so this is safe to leave there. Import it as a trusted
+    root:
+    - macOS: open it in Keychain Access → System keychain → double-click →
+      Trust → "Always Trust" for SSL.
+    - Windows: double-click → Install Certificate → Local Machine → place it
+      in Trusted Root Certification Authorities.
+    - Linux: copy to `/usr/local/share/ca-certificates/caddy-local.crt` and
+      run `sudo update-ca-certificates` (Firefox uses its own NSS store —
+      import separately via Settings → Privacy & Security → Certificates →
+      View Certificates → Authorities → Import).
+    - iOS: AirDrop/email the file to the device, install the profile
+      (Settings → General → VPN & Device Management), then enable full trust
+      under Settings → General → About → Certificate Trust Settings.
+    - Android: Settings → Security → Encryption & credentials → Install a
+      certificate → CA certificate.
+- **GPU passthrough** (`/dev/dri/renderD128`, render node only — not
+  `/dev/dri/card0`, which would grant DRM/KMS display control that conflicts
+  with this container's own virtual display server) gives hardware
+  VAAPI encode for the desktop stream. Getting this working took some
+  digging, worth knowing if you ever touch this service's config:
+  - `security_opt: seccomp:unconfined` is deliberately **not** set, even
+    though linuxserver's own webtop docs suggest it for Chromium/Electron
+    sandboxing. On this setup, with it set, GNOME's `glycin` image-loading
+    library (used for icon/wallpaper decoding) attempts a nested
+    `bubblewrap` sandbox that crashes `xfce4-session`/`xfdesktop`/
+    `xfce4-panel` (a GTK assertion failure, confirmed via `gdb` on the core
+    dumps) as soon as `/dev/dri` is visible and a client connects, instead
+    of falling back to unsandboxed decoding like it does under Docker's
+    default seccomp profile. Symptom if this regresses: a black desktop
+    with no wallpaper/icons/panel and files piling up at `/config/core.*`.
+  - The tradeoff: Chromium/Electron apps you install yourself (Discord)
+    lose the relaxed seccomp their own internal sandbox wants — see the
+    `--no-sandbox` note above.
+  - If GPU passthrough ever causes problems on different hardware, the
+    simplest fix is just removing the `devices:` entry — it falls back to
+    CPU video encoding, which is fine for this use case, just more CPU load.
+  - Even with the device passed through, Ubuntu's *default*
+    `intel-media-va-driver` package is missing the `VideoProc` VA-API
+    entrypoint the stream's GPU-scaling step needs, so it silently falls
+    back to CPU encoding anyway (`vainfo` would show no `VAProfileNone :
+    VAEntrypointVideoProc` line) — same story as the note on
+    `intel-media-va-driver-non-free` for Jellyfin above. The Dockerfile
+    already installs the `-non-free` variant instead, so this works out of
+    the box; if you ever see it falling back to CPU
+    (`docker logs webtop | grep -i vaapi`, want `VAAPI Encoder initialized
+    successfully` / `Encoder: VAAPI`, not `Falling back to CPU`), confirm
+    the right driver is still in the image with
+    `docker exec webtop dpkg -l | grep intel-media-va-driver`.
+- `shm_size: 1gb` is required for Chromium/Electron apps to run properly in
+  the container — linuxserver's own documented requirement for the webtop
+  image.
+- If the desktop feels laggy, open the sidebar in the browser view (an
+  arrow/tab on the screen edge — this is Selkies' own UI, not a Caddy/Kasm
+  thing) and check Screen/Video Settings: it defaults to matching your
+  browser window's exact pixel size at up to 60fps, which is a lot of
+  encoding work for CPU fallback or even VAAPI. Capping resolution (e.g.
+  1920x1080) and framerate (e.g. 30) there cuts CPU load substantially and
+  is plenty for browsing/Discord — no server-side change needed, it's a
+  per-session client setting.
+- Audio (e.g. Discord calls) streams through KasmVNC automatically — no
+  extra ports or config needed.
+- This is by far the heaviest service in this stack (a full desktop running
+  Firefox and Discord's Electron app simultaneously, plus its own capture/
+  encode pipeline) — expect well over 1GB RAM and significant CPU whenever
+  it's actually in use. Put it to sleep when you're done rather than leaving
+  it running: `docker compose stop webtop` (and `docker compose start
+  webtop` to wake it back up). `restart: unless-stopped` respects a manual
+  stop — it won't come back on its own, even across a host reboot, until
+  you start it again.
 
 ## Backup
 

@@ -46,6 +46,9 @@ sonarr/
 # uptime-kuma — runtime database (monitors, history, admin credentials)
 uptime-kuma/
 
+# webtop — desktop/browser/Discord profile data, session tokens
+webtop/config/
+
 # Homepage — dashboard config is personalized (weather location, stock
 # watchlist, bookmarks) — start from the .example files
 # (kubernetes.yaml/proxmox.yaml are unused generated stubs, not personalized

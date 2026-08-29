@@ -34,3 +34,8 @@ http://sonarr.evan {
 http://uptime.evan {
     reverse_proxy localhost:3001
 }
+
+https://desktop.evan {
+    tls internal
+    reverse_proxy localhost:3005
+}

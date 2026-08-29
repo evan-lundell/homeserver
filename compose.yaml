@@ -213,6 +213,37 @@ services:
     ports:
       - "8989:8989"
 
+  webtop:
+    build: ./webtop
+    container_name: webtop
+    restart: unless-stopped
+    shm_size: "1gb"
+    # Deliberately no seccomp:unconfined here: with it set, GNOME's glycin
+    # image-loader (used for icon/wallpaper decoding) attempts a nested
+    # bubblewrap sandbox that crashes xfce4-session/xfdesktop/xfce4-panel
+    # (GTK assertion failure) as soon as /dev/dri is visible, instead of
+    # falling back to unsandboxed decoding like it does under the default
+    # seccomp profile. Tradeoff: Chromium/Electron apps you install yourself
+    # (Discord, in particular) may need launching with --no-sandbox, since
+    # their own internal sandboxing wants that same relaxed seccomp this
+    # container no longer has — see the Webtop notes in README.md.
+    devices:
+      # Render node only (not /dev/dri/card0) — the standard least-privilege
+      # way to give a container VAAPI access without also granting DRM/KMS
+      # display control, which would conflict with this container's own
+      # virtual display server (Xvfb).
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+      - CUSTOM_USER=${WEBTOP_USERNAME}
+      - PASSWORD=${WEBTOP_PASSWORD}
+    volumes:
+      - ./webtop/config:/config
+    ports:
+      - "3005:3000"
+
   uptime-kuma:
     image: louislam/uptime-kuma:1
     container_name: uptime-kuma
