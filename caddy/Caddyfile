@@ -34,3 +34,11 @@ http://sonarr.evan {
 http://uptime.evan {
     reverse_proxy localhost:3001
 }
+
+http://sunshine.evan {
+    reverse_proxy https://localhost:47990 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+}

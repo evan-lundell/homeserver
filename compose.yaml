@@ -214,6 +214,44 @@ services:
     ports:
       - "8989:8989"
 
+  sunshine:
+    build: ./sunshine
+    container_name: sunshine
+    restart: unless-stopped
+    network_mode: host
+    ipc: host
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/uinput:/dev/uinput
+    group_add:
+      - "992" # host `render` group — VAAPI access to /dev/dri/renderD128
+      - "996" # host `input` group — access to /dev/uinput and /dev/input/*
+    device_cgroup_rules:
+      # Docker's device cgroup only allowlists the exact paths under
+      # `devices:` below — bind-mounting /dev/input (needed so newly
+      # created virtual devices show up live) makes the paths visible but
+      # the cgroup still blocks open() on them (EPERM) without this. 13 is
+      # Linux's INPUT_MAJOR for /dev/input/event*, mouse*, js*, etc.
+      - "c 13:* rmw"
+    environment:
+      - TZ=America/Chicago
+      - SERVER_LAN_IP=${SERVER_LAN_IP}
+    volumes:
+      - ./sunshine/home:/home/lizard
+      - /mnt/media/ROMs:/roms
+      # Bind mount (not `devices:`) so newly created virtual mouse/keyboard/
+      # gamepad nodes (created dynamically via /dev/uinput when a stream
+      # session starts) actually show up inside the container — `devices:`
+      # only snapshots fixed paths at container start.
+      - /dev/input:/dev/input
+      # Xorg's udev input backend needs the host's udev device database to
+      # identify these as mouse/keyboard (ID_INPUT_* properties) — there's
+      # no udev daemon running inside the container itself.
+      - /run/udev:/run/udev:ro
+    # network_mode: host above already exposes Sunshine's ports directly
+    # (needed for it to share the host's netns and receive udev hotplug
+    # events for newly created virtual input devices — see group_add above).
+
   uptime-kuma:
     image: louislam/uptime-kuma:1
     container_name: uptime-kuma

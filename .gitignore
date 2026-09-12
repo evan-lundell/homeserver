@@ -46,6 +46,10 @@ sonarr/
 # uptime-kuma — runtime database (monitors, history, admin credentials)
 uptime-kuma/
 
+# Sunshine — pairing credentials, PulseAudio/emulator state (ROMs now live
+# under /mnt/media/ROMs, outside the repo entirely)
+sunshine/home/
+
 # Homepage — dashboard config is personalized (weather location, stock
 # watchlist, bookmarks) — start from the .example files
 # (kubernetes.yaml/proxmox.yaml are unused generated stubs, not personalized

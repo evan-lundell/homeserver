@@ -3,8 +3,9 @@
 A Docker Compose template for a self-hosted home server: media (Jellyfin),
 file sharing (Samba), ad-blocking DNS (Pi-hole), a reverse proxy for clean
 local hostnames (Caddy), remote access (WireGuard), dynamic DNS (ddclient),
-and an optional automated media stack (Prowlarr/Radarr/Sonarr/qBittorrent
-behind a VPN via gluetun), with a dashboard (Homepage) tying it together.
+an optional automated media stack (Prowlarr/Radarr/Sonarr/qBittorrent behind
+a VPN via gluetun), and optional game streaming (Sunshine + Moonlight), with
+a dashboard (Homepage) tying it together.
 
 **Every service below is independent and optional.** Nothing here requires
 running the whole stack — remove any service block from `compose.yaml` (and
@@ -35,6 +36,7 @@ Quick Sync) I haven't confirmed I have.
 | Service    | Purpose                                | Needs an account/credential for |
 |------------|------------------------------------------|-----------------------------------|
 | Jellyfin   | Media server                              | Nothing — admin account and libraries are set up in its own first-run wizard |
+| Sunshine   | Game streaming host — play emulators (or anything else) from any device via a Moonlight client | Nothing external — pair via a one-time PIN in the Moonlight app. Significantly more host-dependent setup than everything else here; see notes below |
 | Samba      | File shares over your LAN                 | Just usernames/passwords you pick |
 | Pi-hole    | Network-wide DNS ad-blocking + local DNS  | Nothing external |
 | Caddy      | Reverse proxy for clean local hostnames   | Nothing (works alongside Pi-hole) |
@@ -78,7 +80,12 @@ of things are hardware/environment-dependent — check what applies to you:
   `radarr`, `sonarr`, `qbittorrent`, `homepage`, and the `samba`
   `[media]` share) to match. There's nothing filesystem-specific required,
   but if you're on NTFS via NTFS-3G and Samba writes are misbehaving, see
-  the Samba note below.
+  the Samba note below; if you're pooling drives with `mergerfs`, see the
+  gotcha under Sunshine below (only relevant if you use Sunshine).
+- **Sunshine game streaming**: needs a GPU with a hardware video encoder —
+  `sunshine/Dockerfile` here is set up for Intel Quick Sync (VAAPI) on a
+  headless host. See "Sunshine" under Notes below before enabling this one;
+  it needs more host-specific tuning than anything else in this template.
 
 ### 2. Clone and configure
 
@@ -102,6 +109,7 @@ of things are hardware/environment-dependent — check what applies to you:
    mkdir -p caddy/data caddy/config
    mkdir -p gluetun qbittorrent prowlarr radarr sonarr
    mkdir -p uptime-kuma
+   mkdir -p sunshine/home
    sudo mkdir -p /srv/general-share && sudo chown "$(id -un):$(id -gn)" /srv/general-share
    ```
 
@@ -171,6 +179,63 @@ docker compose up -d
 - No official client app for Meta Quest (only community VR projects,
   sideloaded); Fire TV/Android TV has an official one from the Amazon
   Appstore.
+
+**Sunshine**
+- By far the most host-dependent service in this template — expect to tune
+  things for your specific GPU/host rather than have it work unmodified.
+  `sunshine/Dockerfile` and `sunshine/entrypoint.sh` are set up for an Intel
+  iGPU (VAAPI) on a headless (no monitor attached) Debian host; adapt the
+  driver packages/`LIBVA_DRIVER_NAME` for Nvidia (NVENC) or AMD, and drop the
+  Xorg dummy-driver setup entirely if the host has a real display.
+- **Headless capture needs a real Xorg server with the `dummy` video driver,
+  not Xvfb.** Xvfb has no input driver stack at all, so Sunshine's
+  uinput-injected mouse/keyboard never reaches it — only a real Xorg session
+  (with `xserver-xorg-input-libinput`) can pick those up, the same way a
+  normal desktop session would.
+- That input path also needs, all at once: a udev rule loosening
+  `/dev/uinput` permissions (`KERNEL=="uinput", GROUP="input", MODE="0660"`),
+  a bind mount of the *whole* `/dev/input` directory (not just `devices:`,
+  which only snapshots fixed paths — new virtual input devices are created
+  dynamically per session), a `device_cgroup_rules` entry allowlisting Linux's
+  input major number (`c 13:* rmw`, since bind-mounting a path doesn't grant
+  cgroup device access on its own), a read-only mount of `/run/udev` (so the
+  container can read the host's device database), and `network_mode: host`
+  (udev hotplug notifications are a netlink broadcast scoped to the network
+  namespace the device was created in — a container's own network namespace
+  never sees them otherwise). Skipping any one of these results in video
+  working fine but mouse/keyboard input silently doing nothing.
+- If HEVC throws encoder errors on real frames (`Failed to end picture
+  encode`) — seen on at least one Intel Skylake iGPU — force H.264-only via
+  `hevc_mode = 1` in `sunshine.conf` (already done for you in
+  `entrypoint.sh`, gated on nothing hardware-specific, so harmless to leave
+  even if your GPU's HEVC encoder works fine).
+- CSRF: Sunshine validates the browser `Origin` header against
+  `csrf_allowed_origins` in its config. Whatever hostname(s)/IP:port you
+  actually use to reach its web UI (LAN IP, and/or a Caddy hostname like
+  `sunshine.evan`) need to be listed there or login fails with a CSRF error.
+  `entrypoint.sh` seeds this from `SERVER_LAN_IP`; add further origins as a
+  comma-separated list.
+- If proxying through Caddy: Sunshine's web UI is HTTPS-only with a
+  self-signed cert, so the reverse proxy needs
+  `reverse_proxy https://localhost:47990 { transport http { tls_insecure_skip_verify } }`
+  rather than a plain `reverse_proxy`.
+- **If pooling media storage with `mergerfs`** (this template's example
+  `/mnt/media` setup): its file-*creation* permission check only honors
+  owner/group match, not "other" bits, even though `ls` shows them —
+  confirmed by testing, not just a config quirk (writes to *existing*
+  world-writable files work fine; only *creating new* files misbehaves). In
+  practice this means a save file an emulator tries to create fresh (e.g. a
+  DS `.sav`) can fail with a permission error despite `777` on the folder.
+  The fix used here: match the container's user to your host UID/GID
+  (`usermod -u 1000 lizard && groupmod -g 1000 lizard` in the Dockerfile,
+  1000 being this template's assumed primary host user — adjust to your own
+  `id -u`), not looser permissions.
+- Bundles melonDS (DS) and Azahar (3DS) by default, installed as AppImages
+  at build time — see `sunshine/Dockerfile` to swap in other
+  emulators/systems. ROMs aren't included; point `sunshine/roms` (or
+  wherever you mount `/roms`) at your own legally-owned dumps, and add each
+  emulator as a Sunshine "Application" (web UI → Applications) pointing at
+  its extracted `AppRun` binary.
 
 **Samba**
 - Ships with a custom `smb.conf` rather than the image's auto-generated
