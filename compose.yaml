@@ -38,7 +38,7 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      - WG_HOST=${DDNS_HOSTNAME}
+      - WG_HOST=${PUBLIC_DOMAIN}
       - PASSWORD_HASH=${WG_PASSWORD_HASH}
       - PGID=1000
       - PUID=1000
@@ -48,20 +48,6 @@ services:
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
-
-  ddclient:
-    image: linuxserver/ddclient
-    container_name: ddclient
-    restart: unless-stopped
-    dns:
-      - 1.1.1.1
-      - 8.8.8.8
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/Chicago
-    volumes:
-      - ./ddclient:/config
 
   pihole:
     image: pihole/pihole:latest

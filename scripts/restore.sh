@@ -79,7 +79,7 @@ done
 cat <<'EOF'
 
 Done. Before "docker compose up -d":
-  - Review .env — confirm SERVER_LAN_IP, DDNS_HOSTNAME, etc. match this host.
+  - Review .env — confirm SERVER_LAN_IP, PUBLIC_DOMAIN, etc. match this host.
   - Confirm /mnt/media and /srv/general-share (if used) are mounted.
 
 After first boot, these come up fresh and need manual attention:

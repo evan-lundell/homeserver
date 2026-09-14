@@ -23,7 +23,6 @@ log "=== Maintenance run: $DATE ==="
 #    actually changed since the last backup.
 BACKUP_PATHS=(
     .env
-    ddclient/ddclient.conf
     samba/smb.conf
     wireguard/wg0.conf
     wireguard/wg0.json

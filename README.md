@@ -2,7 +2,7 @@
 
 A Docker Compose template for a self-hosted home server: media (Jellyfin),
 file sharing (Samba), ad-blocking DNS (Pi-hole), a reverse proxy for clean
-local hostnames (Caddy), remote access (WireGuard), dynamic DNS (ddclient),
+local hostnames (Caddy), remote access (WireGuard),
 an optional automated media stack (Prowlarr/Radarr/Sonarr/qBittorrent behind
 a VPN via gluetun), and optional game streaming (Sunshine + Moonlight), with
 a dashboard (Homepage) tying it together.
@@ -40,8 +40,7 @@ Quick Sync) I haven't confirmed I have.
 | Samba      | File shares over your LAN                 | Just usernames/passwords you pick |
 | Pi-hole    | Network-wide DNS ad-blocking + local DNS  | Nothing external |
 | Caddy      | Reverse proxy for clean local hostnames   | Nothing (works alongside Pi-hole) |
-| WireGuard  | VPN for remote access (wg-easy)           | Nothing external (self-contained) |
-| ddclient   | Keeps a dynamic DNS hostname updated       | A DDNS provider account (e.g. No-IP) — skip if you have a static public IP or don't need remote access |
+| WireGuard  | VPN for remote access (wg-easy)           | A domain (or subdomain) with an A record pointing at your static public IP — skip if you don't need remote access |
 | gluetun + qBittorrent | Torrent client routed through a VPN | A VPN provider account that supports it (see [gluetun's wiki](https://github.com/qdm12/gluetun/wiki) for supported providers and credential format — varies by provider) |
 | Prowlarr / Radarr / Sonarr | Automated media search & management | Nothing to start; each generates its own API key on first run |
 | FlareSolverr | Solves Cloudflare challenges for Prowlarr indexers that need it | Nothing — no account, no config |
@@ -92,8 +91,6 @@ of things are hardware/environment-dependent — check what applies to you:
 1. Clone this repo to wherever you want it on the server (e.g. `~/homeserver`).
 2. Copy each `.example` file and fill in real values:
    - `.env.example` → `.env`
-   - `ddclient/ddclient.conf.example` → `ddclient/ddclient.conf` (skip if
-     you're not using ddclient)
    - `samba/smb.conf.example` → `samba/smb.conf` (skip if you're not using
      Samba) — see "Setting up your own Samba users" below
    - `homepage/config/*.yaml.example` → strip the `.example` suffix from
@@ -132,13 +129,11 @@ of things are hardware/environment-dependent — check what applies to you:
   all, you also need to forward UDP port 51820 (WireGuard's default) on
   your router to the server's LAN IP — without that, peers can't reach the
   server from outside your home network. The admin dashboard itself (port
-  51821) is only needed on your LAN and should *not* be forwarded.
-- **ddclient**: sign up with a DDNS provider (e.g. No-IP), point a hostname
-  at your public IP, and put the login/password/hostname in
-  `ddclient/ddclient.conf`. Set that same hostname as `DDNS_HOSTNAME` in
-  `.env` (used for WireGuard's public address) — and `SERVER_LAN_IP` to
-  your server's static/reserved LAN IP (used for WireGuard's DNS setting
-  and Homepage's allowed hosts).
+  51821) is only needed on your LAN and should *not* be forwarded. Point
+  an A record for your domain at your router's public IP (needs to be
+  static, or reserved/static via your ISP) and set it as `PUBLIC_DOMAIN`
+  in `.env` — and `SERVER_LAN_IP` to your server's static/reserved LAN IP
+  (used for WireGuard's DNS setting and Homepage's allowed hosts).
 - **gluetun**: configured for ProtonVPN over WireGuard with port forwarding
   on. Generate a WireGuard config at
   https://account.proton.me/u/0/vpn/WireGuard (check "NAT-PMP (Port
@@ -279,10 +274,6 @@ change all of them together, to whatever names/number of users you want):
   extension combinations are flaky about respecting `http://` on the
   redirect specifically. If a service seems to "not work" in one browser,
   try clearing that domain's history/cache or just bookmark the full path.
-
-**ddclient**
-- Only pushes an update when your public IP actually changes — seeing
-  "nochg" in the logs is success, not an error.
 
 **Homepage**
 - `homepage/config/{services,widgets,bookmarks,settings,docker}.yaml` are

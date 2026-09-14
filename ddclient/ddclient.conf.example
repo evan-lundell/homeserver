@@ -1,7 +1,0 @@
-protocol=noip
-use=web, web=checkip.dyndns.com/, web-skip='IP Address'
-server=dynupdate.no-ip.com
-login=your-noip-username
-password='changeme'
-ssl=yes
-yourhostname

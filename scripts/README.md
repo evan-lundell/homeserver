@@ -40,8 +40,8 @@ images.
 ## What it backs up
 
 Anything hand-edited that can't be regenerated from git or from an app's own
-UI (see `BACKUP_PATHS` in `maintenance.sh`) — currently `.env`, ddclient
-config, samba config, WireGuard config, the personalized Homepage dashboard
+UI (see `BACKUP_PATHS` in `maintenance.sh`) — currently `.env`, samba
+config, WireGuard config, the personalized Homepage dashboard
 config, and this directory's sudoers rule. Backups land in
 `~/homeserver-maintenance/backups/`, one tarball per change, oldest pruned
 past the last 10.
