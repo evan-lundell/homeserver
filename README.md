@@ -231,6 +231,25 @@ docker compose up -d
   wherever you mount `/roms`) at your own legally-owned dumps, and add each
   emulator as a Sunshine "Application" (web UI → Applications) pointing at
   its extracted `AppRun` binary.
+- **melonDS (DS) works well as-is** — DS-level 3D is light enough for
+  software rendering. **Azahar (3DS) does not**, under the headless
+  `dummy`-driver setup this template uses: 3DS emulation needs real
+  GPU-accelerated presentation, and the `dummy` driver can't provide it
+  either way — OpenGL falls back to CPU software rendering (`GL_RENDERER:
+  llvmpipe`), far too slow for real gameplay, and Vulkan gets a genuine
+  hardware context but then fails at surface creation (`Failed to
+  initialize Xlib surface: ErrorOutOfHostMemory`) since `dummy` doesn't
+  back the DRI3/Present machinery Vulkan's X11 presentation path needs —
+  Azahar treats that as unrecoverable and exits. Its config is left on
+  `graphics_api=1` (OpenGL) here so it at least doesn't hard-crash on
+  launch; it just won't be playable. To actually fix this: either give the
+  host a real display (a cheap HDMI/DP dummy plug is enough) so Xorg can
+  use its real GPU driver instead of `dummy`, or replace this whole
+  X11+dummy setup with a headless Wayland compositor that can do
+  GPU-accelerated presentation without a real display attached (a bigger
+  rework — different capture backend, and the uinput/cgroup/udev/host-networking
+  input chain documented above would need re-validating from scratch for
+  it).
 
 **Samba**
 - Ships with a custom `smb.conf` rather than the image's auto-generated

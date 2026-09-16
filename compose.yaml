@@ -212,6 +212,7 @@ services:
     group_add:
       - "992" # host `render` group — VAAPI access to /dev/dri/renderD128
       - "996" # host `input` group — access to /dev/uinput and /dev/input/*
+      - "44" # host `video` group — modesetting access to /dev/dri/card0 (real HDMI dummy plug display)
     device_cgroup_rules:
       # Docker's device cgroup only allowlists the exact paths under
       # `devices:` below — bind-mounting /dev/input (needed so newly

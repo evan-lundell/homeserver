@@ -2,17 +2,26 @@ FROM ghcr.io/lizardbyte/sunshine:v2026.911.165624-debian-trixie
 
 USER root
 
-# Xorg + the dummy video driver: a real (headless) X server for capture
-# (this host has no monitor attached). Deliberately NOT Xvfb — Xvfb has no
-# input driver stack at all, so Sunshine's uinput-injected mouse/keyboard
-# events (real kernel input devices) never reach it. Xorg+dummy loads the
-# libinput driver like a normal desktop session would, so those devices
-# actually get picked up.
+# Xorg + the modesetting driver: a real X server against a physical HDMI
+# dummy plug (EDID emulator) on this otherwise-headless host, so it gets
+# genuine hardware-accelerated OpenGL/Vulkan (needed for Azahar/3DS — the
+# earlier "dummy" 2D-only video driver couldn't back Vulkan's presentation
+# path at all, and only gave OpenGL software/CPU rendering, too slow for
+# real gameplay). Deliberately NOT Xvfb — Xvfb has no input driver stack at
+# all, so Sunshine's uinput-injected mouse/keyboard events (real kernel
+# input devices) never reach it. A real Xorg session loads the libinput
+# driver like a normal desktop would, so those devices actually get picked
+# up.
 # pulseaudio: virtual audio sink so emulator audio has somewhere to go.
 # openbox: minimal window manager so the emulator window gets decorated/
 # focused normally instead of floating undecorated on the root window.
 # intel-media-va-driver-non-free: VAAPI driver for this host's Intel HD 530
 # (Skylake) iGPU — the modern iHD driver, not the legacy i965 one.
+# mesa-vulkan-drivers: without a registered Vulkan ICD, libvulkan.so.1 is
+# still present (pulled in as a dependency of something else) but every
+# Vulkan call finds zero drivers — Azahar segfaults on launch (NULL
+# function pointer, confirmed via gdb/core dump) probing Vulkan
+# availability in that state, well before any game/renderer is involved.
 # Debian's default sources only enable the "main" component; the Intel
 # VAAPI driver lives in non-free(-firmware), so enable those too.
 RUN sed -i 's/^Components: main$/Components: main contrib non-free non-free-firmware/' \
@@ -20,12 +29,12 @@ RUN sed -i 's/^Components: main$/Components: main contrib non-free non-free-firm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         xserver-xorg-core \
-        xserver-xorg-video-dummy \
         xserver-xorg-input-libinput \
         xserver-xorg-legacy \
         pulseaudio \
         openbox \
         intel-media-va-driver-non-free \
+        mesa-vulkan-drivers \
         libgpg-error0 \
         curl \
         unzip \
@@ -36,7 +45,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # container to grant this the normal way).
 RUN echo 'allowed_users=anybody\nneeds_root_rights=no' > /etc/X11/Xwrapper.config
 
-COPY xorg-dummy.conf /etc/X11/xorg-dummy.conf
+COPY xorg.conf /etc/X11/xorg.conf
 
 # Match the host's evan (1000:1000), like every other service in this repo
 # (PUID/PGID=1000). The base image's lizard user defaults to 1001:1001.

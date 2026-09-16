@@ -35,7 +35,14 @@ http://uptime.evan {
     reverse_proxy localhost:3001
 }
 
-http://sunshine.evan {
+https://sunshine.evan {
+    # Sunshine's CSRF protection hard-requires https:// origins (see its
+    # source, config.cpp — no http:// entry is ever accepted, regardless
+    # of what's in csrf_allowed_origins), unlike every other service here.
+    # `tls internal` uses Caddy's own local CA instead of ACME, since real
+    # certs don't work for the made-up .evan TLD — expect a one-time
+    # browser trust prompt for this domain specifically.
+    tls internal
     reverse_proxy https://localhost:47990 {
         transport http {
             tls_insecure_skip_verify
