@@ -94,25 +94,29 @@ if [ $? -ne 0 ]; then
 fi
 
 # 3. Pull latest Docker images
-#    `compose pull` fires every image pull in parallel, which occasionally
-#    trips a burst rate limit on lscr.io/ghcr.io (their own retry-after has
-#    been sub-millisecond when this happens, i.e. a transient blip, not a
-#    real quota problem). Capping concurrency keeps the burst small enough
-#    to avoid the throttle in the first place; the retry loop below is just
-#    a safety net for when it still happens.
+#    Pulling everything in one `compose pull` (even with a concurrency cap)
+#    kept tripping a burst rate limit on lscr.io/ghcr.io (their own
+#    retry-after is sub-millisecond when this happens, i.e. a transient blip,
+#    not a real quota problem), and one failed image aborted the whole run.
+#    Instead pull one service at a time, retry each independently, and carry
+#    on if one still fails: `up -d` below just keeps running that service on
+#    its existing local image. Failures are summarised at the end of the run.
 log "--- Pulling Docker images ---"
-export COMPOSE_PARALLEL_LIMIT=4
 PULL_ATTEMPTS=3
 PULL_DELAY=15
-n=1
-until docker compose pull >> "$LOGFILE" 2>&1; do
-    if [ "$n" -ge "$PULL_ATTEMPTS" ]; then
-        log "FATAL: docker compose pull failed after $PULL_ATTEMPTS attempts, aborting run"
-        exit 1
-    fi
-    log "docker compose pull failed (attempt $n/$PULL_ATTEMPTS), retrying in ${PULL_DELAY}s"
-    sleep "$PULL_DELAY"
-    n=$((n+1))
+FAILED_PULLS=()
+for svc in $(docker compose config --services); do
+    n=1
+    until docker compose pull "$svc" >> "$LOGFILE" 2>&1; do
+        if [ "$n" -ge "$PULL_ATTEMPTS" ]; then
+            log "WARN: pull of $svc failed after $PULL_ATTEMPTS attempts, keeping existing image"
+            FAILED_PULLS+=("$svc")
+            break
+        fi
+        log "pull of $svc failed (attempt $n/$PULL_ATTEMPTS), retrying in ${PULL_DELAY}s"
+        sleep "$PULL_DELAY"
+        n=$((n+1))
+    done
 done
 
 # 4. Recreate containers with new images
@@ -134,6 +138,9 @@ docker compose up -d gluetun qbittorrent prowlarr flaresolverr >> "$LOGFILE" 2>&
 log "--- Pruning images older than 24h ---"
 docker image prune -f --filter "until=24h" >> "$LOGFILE" 2>&1
 
+if [ "${#FAILED_PULLS[@]}" -gt 0 ]; then
+    log "!!! PULL FAILURES (not updated): ${FAILED_PULLS[*]}"
+fi
 log "=== Maintenance run complete: $(date +%Y%m%d-%H%M%S) ==="
 log ""
 
