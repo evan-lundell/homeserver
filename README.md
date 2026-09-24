@@ -179,14 +179,22 @@ docker compose up -d
 - By far the most host-dependent service in this template — expect to tune
   things for your specific GPU/host rather than have it work unmodified.
   `sunshine/Dockerfile` and `sunshine/entrypoint.sh` are set up for an Intel
-  iGPU (VAAPI) on a headless (no monitor attached) Debian host; adapt the
-  driver packages/`LIBVA_DRIVER_NAME` for Nvidia (NVENC) or AMD, and drop the
-  Xorg dummy-driver setup entirely if the host has a real display.
-- **Headless capture needs a real Xorg server with the `dummy` video driver,
-  not Xvfb.** Xvfb has no input driver stack at all, so Sunshine's
-  uinput-injected mouse/keyboard never reaches it — only a real Xorg session
-  (with `xserver-xorg-input-libinput`) can pick those up, the same way a
-  normal desktop session would.
+  iGPU (VAAPI, Mesa `iris`/Vulkan) on an otherwise headless Debian host with
+  an **HDMI dummy plug** (a ~$5 EDID emulator) in the video output; adapt the
+  driver packages/`LIBVA_DRIVER_NAME` for Nvidia (NVENC) or AMD. A host with a
+  real monitor attached doesn't need the plug.
+- **Capture needs a real Xorg server with the `modesetting` driver, not Xvfb
+  and not the `dummy` video driver.** Xvfb has no input driver stack at all,
+  so Sunshine's uinput-injected mouse/keyboard never reaches it — only a real
+  Xorg session (with `xserver-xorg-input-libinput`) can pick those up. And the
+  fake `dummy` *video* driver has no GPU path: OpenGL falls back to CPU
+  `llvmpipe` (far too slow for 3DS emulation) and Vulkan fails at surface
+  creation (`Failed to initialize Xlib surface: ErrorOutOfHostMemory`) because
+  `dummy` can't back the DRI3/Present machinery. With a physical (dummy) plug
+  connected, `modesetting` gets full hardware GL/Vulkan. The container also
+  needs the host's `video` group (for `/dev/dri/card0` modesetting, not just
+  `renderD128` for encoding) and `mesa-vulkan-drivers` (without a registered
+  Vulkan ICD, Azahar segfaults on launch).
 - That input path also needs, all at once: a udev rule loosening
   `/dev/uinput` permissions (`KERNEL=="uinput", GROUP="input", MODE="0660"`),
   a bind mount of the *whole* `/dev/input` directory (not just `devices:`,
@@ -231,25 +239,23 @@ docker compose up -d
   wherever you mount `/roms`) at your own legally-owned dumps, and add each
   emulator as a Sunshine "Application" (web UI → Applications) pointing at
   its extracted `AppRun` binary.
-- **melonDS (DS) works well as-is** — DS-level 3D is light enough for
-  software rendering. **Azahar (3DS) does not**, under the headless
-  `dummy`-driver setup this template uses: 3DS emulation needs real
-  GPU-accelerated presentation, and the `dummy` driver can't provide it
-  either way — OpenGL falls back to CPU software rendering (`GL_RENDERER:
-  llvmpipe`), far too slow for real gameplay, and Vulkan gets a genuine
-  hardware context but then fails at surface creation (`Failed to
-  initialize Xlib surface: ErrorOutOfHostMemory`) since `dummy` doesn't
-  back the DRI3/Present machinery Vulkan's X11 presentation path needs —
-  Azahar treats that as unrecoverable and exits. Its config is left on
-  `graphics_api=1` (OpenGL) here so it at least doesn't hard-crash on
-  launch; it just won't be playable. To actually fix this: either give the
-  host a real display (a cheap HDMI/DP dummy plug is enough) so Xorg can
-  use its real GPU driver instead of `dummy`, or replace this whole
-  X11+dummy setup with a headless Wayland compositor that can do
-  GPU-accelerated presentation without a real display attached (a bigger
-  rework — different capture backend, and the uinput/cgroup/udev/host-networking
-  input chain documented above would need re-validating from scratch for
-  it).
+- Both emulators run well with the plug + `modesetting` setup: melonDS
+  (DS) trivially, Azahar (3DS) on Vulkan (`graphics_api=2` in its
+  `qt-config.ini`) at full speed on an Intel HD 530. 3DS emulation is
+  CPU-hungry though: pin the host CPU governor to `performance`
+  (`sunshine/cpu-performance-governor.service` — copy it to
+  `/etc/systemd/system/`, `daemon-reload`, `enable --now`). `powersave` held
+  an i5-6500 near 2.7GHz instead of its 3.6GHz turbo and caused in-game
+  stutter that looked like a network problem (it wasn't — interface
+  error/drop counters were ~zero).
+- **`/tmp` survives `docker restart`** (only a full recreate wipes it), so any
+  stale runtime file in it breaks startup silently. The entrypoint clears the
+  X lock/socket and PulseAudio's runtime dir for this reason: a killed
+  PulseAudio leaves a `pid` file that makes `pulseaudio --start` think it's
+  still running and start nothing — no stream audio, and Azahar segfaults
+  when you open Emulation > Configure mid-game (cubeb audio-device
+  enumeration against the dead server). If you add another daemon to the
+  entrypoint, give it the same treatment.
 
 **Samba**
 - Ships with a custom `smb.conf` rather than the image's auto-generated

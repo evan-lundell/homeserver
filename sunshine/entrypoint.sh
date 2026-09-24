@@ -16,8 +16,17 @@ for i in $(seq 1 20); do
     sleep 0.5
 done
 
+# Same /tmp-survives-restart trap as the X lock: a killed PulseAudio leaves
+# its pid file behind, and `pulseaudio --start` then sees that (reused) pid
+# as alive and silently starts nothing. Result: no stream audio, and Azahar
+# segfaults enumerating audio devices (cubeb) against the dead server.
+rm -rf /tmp/pulse-* "$HOME"/.config/pulse/*-runtime
+
 pulseaudio --start --exit-idle-time=-1
-sleep 1
+for i in $(seq 1 20); do
+    pactl info >/dev/null 2>&1 && break
+    sleep 0.5
+done
 pactl load-module module-null-sink sink_name=sunshine_sink sink_properties=device.description=SunshineSink >/dev/null 2>&1 || true
 pactl set-default-sink sunshine_sink >/dev/null 2>&1 || true
 
