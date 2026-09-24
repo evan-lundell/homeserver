@@ -48,6 +48,8 @@ RUNTIME_DIRS=(
     prowlarr
     radarr
     sonarr
+    bazarr
+    speedtest-tracker
     homepage/config/logs
 )
 
@@ -86,7 +88,7 @@ After first boot, these come up fresh and need manual attention:
   - Jellyfin: complete the first-run setup wizard (admin user + media
     library paths).
   - Radarr / Sonarr: generate new API keys on first run — update
-    RADARR_API_KEY / SONARR_API_KEY in .env to match, then
+    RADARR_API_KEY / SONARR_API_KEY / BAZARR_API_KEY in .env to match, then
     `docker compose up -d homepage` to pick them up.
   - qBittorrent: check `docker compose logs qbittorrent` for the
     auto-generated temporary admin password on first login.

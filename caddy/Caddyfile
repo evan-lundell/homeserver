@@ -31,8 +31,16 @@ http://sonarr.evan {
     reverse_proxy localhost:8989
 }
 
+http://bazarr.evan {
+    reverse_proxy localhost:6767
+}
+
 http://uptime.evan {
     reverse_proxy localhost:3001
+}
+
+http://speedtest.evan {
+    reverse_proxy localhost:8765
 }
 
 https://sunshine.evan {

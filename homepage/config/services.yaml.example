@@ -47,6 +47,16 @@
           type: sonarr
           url: http://sonarr:8989
           key: "{{HOMEPAGE_VAR_SONARR_API_KEY}}"
+    - Bazarr:
+        icon: bazarr
+        href: http://bazarr.evan
+        description: Subtitle automation
+        server: my-docker
+        container: bazarr
+        widget:
+          type: bazarr
+          url: http://bazarr:6767
+          key: "{{HOMEPAGE_VAR_BAZARR_API_KEY}}"
     - Prowlarr:
         icon: prowlarr
         href: http://prowlarr.evan
@@ -87,6 +97,18 @@
           type: uptimekuma
           url: http://uptime-kuma:3001
           slug: default
+    - Speedtest Tracker:
+        icon: speedtest-tracker
+        href: http://speedtest.evan
+        description: Scheduled internet speed tests
+        server: my-docker
+        container: speedtest-tracker
+        widget:
+          type: speedtest
+          url: http://speedtest-tracker:80
+          version: 2
+          key: "{{HOMEPAGE_VAR_SPEEDTEST_API_KEY}}"
+          bitratePrecision: 0
     - Samba:
         icon: samba-server
         href: smb://samba.evan/media

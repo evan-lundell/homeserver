@@ -43,6 +43,7 @@ Quick Sync) I haven't confirmed I have.
 | WireGuard  | VPN for remote access (wg-easy)           | A domain (or subdomain) with an A record pointing at your static public IP — skip if you don't need remote access |
 | gluetun + qBittorrent | Torrent client routed through a VPN | A VPN provider account that supports it (see [gluetun's wiki](https://github.com/qdm12/gluetun/wiki) for supported providers and credential format — varies by provider) |
 | Prowlarr / Radarr / Sonarr | Automated media search & management | Nothing to start; each generates its own API key on first run |
+| Bazarr     | Subtitle downloads for Radarr/Sonarr libraries (incl. forced/foreign-dialogue subs) | Nothing to start; subtitle providers (e.g. a free [OpenSubtitles](https://www.opensubtitles.com) account) are added in its UI |
 | FlareSolverr | Solves Cloudflare challenges for Prowlarr indexers that need it | Nothing — no account, no config |
 | Homepage   | Dashboard linking all of the above        | Nothing extra to start — reuses the above (optional: a free [Finnhub](https://finnhub.io/register) key for the stock widget, a Google Calendar ICS URL for the calendar widget) |
 | Uptime Kuma | Uptime monitoring/alerting for your other services | Nothing external — admin account is created in its UI on first visit |
@@ -104,8 +105,9 @@ of things are hardware/environment-dependent — check what applies to you:
    mkdir -p wireguard
    mkdir -p pihole/etc-pihole pihole/etc-dnsmasq.d
    mkdir -p caddy/data caddy/config
-   mkdir -p gluetun qbittorrent prowlarr radarr sonarr
+   mkdir -p gluetun qbittorrent prowlarr radarr sonarr bazarr
    mkdir -p uptime-kuma
+   mkdir -p speedtest-tracker
    mkdir -p sunshine/home
    sudo mkdir -p /srv/general-share && sudo chown "$(id -un):$(id -gn)" /srv/general-share
    ```
@@ -349,6 +351,18 @@ change all of them together, to whatever names/number of users you want):
   create a new one), and match its slug in `services.yaml`'s `uptimekuma`
   widget (defaults to `default` here). Skip the `widget:` block if you don't
   want this.
+
+**Speedtest Tracker**
+- Runs an Ookla speed test on the schedule in `compose.yaml`
+  (`SPEEDTEST_SCHEDULE`, every 2 hours by default) and keeps the history.
+- Before first start, fill in `SPEEDTEST_APP_KEY` (generate with
+  `echo "base64:$(openssl rand -base64 32)"`), `SPEEDTEST_ADMIN_EMAIL` and
+  `SPEEDTEST_ADMIN_PASSWORD` in `.env`. The admin values are only read when
+  the database is first created; change them later in the UI.
+- For the Homepage widget: log in at `http://speedtest.evan` (or
+  `localhost:8765`), create an API token with read access (under your
+  profile → API Tokens), put it in `.env` as `SPEEDTEST_API_KEY`, and
+  recreate Homepage (`docker compose up -d homepage`).
 
 ## Backup
 

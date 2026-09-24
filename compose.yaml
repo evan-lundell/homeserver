@@ -176,9 +176,11 @@ services:
       - HOMEPAGE_VAR_PIHOLE_PASSWORD=${PIHOLE_PASSWORD}
       - HOMEPAGE_VAR_WG_PASSWORD=${WG_ADMIN_PASSWORD}
       - HOMEPAGE_VAR_SONARR_API_KEY=${SONARR_API_KEY}
+      - HOMEPAGE_VAR_BAZARR_API_KEY=${BAZARR_API_KEY}
       - HOMEPAGE_VAR_SERVER_IP=${SERVER_LAN_IP}
       - HOMEPAGE_VAR_GCAL_ICS_URL=${GCAL_ICS_URL}
       - HOMEPAGE_VAR_FINNHUB_API_KEY=${FINNHUB_API_KEY}
+      - HOMEPAGE_VAR_SPEEDTEST_API_KEY=${SPEEDTEST_API_KEY}
     volumes:
       - ./homepage/config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -199,6 +201,22 @@ services:
       - /mnt/media/Plex:/data
     ports:
       - "8989:8989"
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - ./bazarr:/config
+      # Same mount as radarr/sonarr so paths they report resolve as-is
+      # (no path mapping needed in Bazarr's settings).
+      - /mnt/media/Plex:/data
+    ports:
+      - "6767:6767"
 
   sunshine:
     build: ./sunshine
@@ -249,3 +267,27 @@ services:
       - ./uptime-kuma:/app/data
     ports:
       - "3001:3001"
+
+  speedtest-tracker:
+    image: lscr.io/linuxserver/speedtest-tracker:latest
+    container_name: speedtest-tracker
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+      - APP_KEY=${SPEEDTEST_APP_KEY}
+      - APP_URL=http://speedtest.evan
+      - DB_CONNECTION=sqlite
+      - DISPLAY_TIMEZONE=America/Chicago
+      # Every 2 hours at :17. Each run moves roughly 1 GB (down + up) at
+      # current speeds, so hourly would be ~700 GB/month of test traffic.
+      - SPEEDTEST_SCHEDULE=17 */2 * * *
+      # Only read on first startup, when the admin user is created.
+      - ADMIN_NAME=Evan
+      - ADMIN_EMAIL=${SPEEDTEST_ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${SPEEDTEST_ADMIN_PASSWORD}
+    volumes:
+      - ./speedtest-tracker:/config
+    ports:
+      - "8765:80"

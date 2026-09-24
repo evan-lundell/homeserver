@@ -40,8 +40,14 @@ radarr/
 # sonarr — runtime config, API keys
 sonarr/
 
+# bazarr — runtime config, API keys, provider credentials
+bazarr/
+
 # uptime-kuma — runtime database (monitors, history, admin credentials)
 uptime-kuma/
+
+# speedtest-tracker — runtime database (results history, admin credentials)
+speedtest-tracker/
 
 # Sunshine — pairing credentials, PulseAudio/emulator state (ROMs now live
 # under /mnt/media/ROMs, outside the repo entirely)
