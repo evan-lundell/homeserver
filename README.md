@@ -225,7 +225,7 @@ docker compose up -d
   (`usermod -u 1000 lizard && groupmod -g 1000 lizard` in the Dockerfile,
   1000 being this template's assumed primary host user — adjust to your own
   `id -u`), not looser permissions.
-- Bundles melonDS (DS) and Azahar (3DS) by default, installed as AppImages
+- Bundles melonDS (DS), Azahar (3DS), and mGBA (GBA/GB/GBC) by default, installed as AppImages
   at build time — see `sunshine/Dockerfile` to swap in other
   emulators/systems. ROMs aren't included; point `sunshine/roms` (or
   wherever you mount `/roms`) at your own legally-owned dumps, and add each

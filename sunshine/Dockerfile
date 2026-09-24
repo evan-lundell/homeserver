@@ -75,6 +75,14 @@ RUN curl -fL -o /tmp/azahar.AppImage \
     && mv squashfs-root /opt/azahar \
     && rm -f /tmp/azahar.AppImage
 
+# mGBA (GBA, plus GB/GBC).
+RUN curl -fL -o /tmp/mgba.AppImage \
+        https://github.com/mgba-emu/mgba/releases/download/0.10.5/mGBA-0.10.5-appimage-x64.appimage \
+    && chmod +x /tmp/mgba.AppImage \
+    && cd /tmp && ./mgba.AppImage --appimage-extract \
+    && mv squashfs-root /opt/mgba \
+    && rm -f /tmp/mgba.AppImage
+
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh && chown lizard:lizard /entrypoint.sh
 
