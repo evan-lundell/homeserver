@@ -100,6 +100,8 @@ services:
       - "8081:8081"
       - "9696:9696"
       - "8191:8191"
+      - "5656:5656" # kapowarr
+      - "8084:8084" # shelfmark
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -141,6 +143,65 @@ services:
       - TZ=America/Chicago
     depends_on:
       - gluetun
+
+  kapowarr:
+    image: mrcas/kapowarr:latest
+    container_name: kapowarr
+    restart: unless-stopped
+    # Behind the VPN even though most of its downloads are direct HTTPS
+    # (GetComics + file hosts), not torrents. Torrent links it finds are
+    # handed to qBittorrent at localhost:8081 (shared netns).
+    network_mode: "service:gluetun"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - ./kapowarr/db:/app/db
+      # Same filesystem as the library so finished downloads move instantly.
+      - /mnt/media/Plex/downloads/kapowarr:/app/temp_downloads
+      # Same mount as qBittorrent so the paths it reports resolve as-is.
+      # Add /data/Comics as the root folder in Kapowarr's settings.
+      - /mnt/media/Plex:/data
+    depends_on:
+      - gluetun
+
+  shelfmark:
+    # -lite has no bundled Chromium bypasser; it uses the FlareSolverr
+    # already running in gluetun's netns instead (saves a few hundred MB).
+    image: ghcr.io/calibrain/shelfmark-lite:latest
+    container_name: shelfmark
+    restart: unless-stopped
+    network_mode: "service:gluetun"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+      - EXT_BYPASSER_URL=http://localhost:8191
+    volumes:
+      - ./shelfmark:/config
+      - /mnt/media/Plex/Books:/books
+      # Same mount as qBittorrent — Shelfmark has to read the exact path
+      # qBittorrent reports for torrent downloads.
+      - /mnt/media/Plex:/data
+    depends_on:
+      - gluetun
+
+  kavita:
+    image: lscr.io/linuxserver/kavita:latest
+    container_name: kavita
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - ./kavita:/config
+      # Read-only: Kavita only reads the library (covers/metadata live in
+      # /config). Libraries: /data/Comics and /data/Books.
+      - /mnt/media/Plex:/data:ro
+    ports:
+      - "5000:5000"
 
   radarr:
     image: lscr.io/linuxserver/radarr:latest

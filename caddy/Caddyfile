@@ -43,6 +43,18 @@ http://speedtest.evan {
     reverse_proxy localhost:8765
 }
 
+http://kapowarr.evan {
+    reverse_proxy localhost:5656
+}
+
+http://shelfmark.evan {
+    reverse_proxy localhost:8084
+}
+
+http://kavita.evan {
+    reverse_proxy localhost:5000
+}
+
 https://sunshine.evan {
     # Sunshine's CSRF protection hard-requires https:// origins (see its
     # source, config.cpp — no http:// entry is ever accepted, regardless

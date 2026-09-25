@@ -43,6 +43,11 @@ sonarr/
 # bazarr — runtime config, API keys, provider credentials
 bazarr/
 
+# kapowarr / shelfmark / kavita — runtime databases, API keys, accounts
+kapowarr/
+shelfmark/
+kavita/
+
 # uptime-kuma — runtime database (monitors, history, admin credentials)
 uptime-kuma/
 

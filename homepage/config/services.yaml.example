@@ -14,6 +14,12 @@
           url: http://jellyfin:8096
           key: "{{HOMEPAGE_VAR_JELLYFIN_API_KEY}}"
           version: 2
+    - Kavita:
+        icon: kavita
+        href: http://kavita.evan
+        description: Comics & ebook reader
+        server: my-docker
+        container: kavita
 
 - Downloads:
     - qBittorrent:
@@ -57,6 +63,18 @@
           type: bazarr
           url: http://bazarr:6767
           key: "{{HOMEPAGE_VAR_BAZARR_API_KEY}}"
+    - Kapowarr:
+        icon: kapowarr
+        href: http://kapowarr.evan
+        description: Comic automation (behind VPN)
+        server: my-docker
+        container: kapowarr
+    - Shelfmark:
+        icon: mdi-bookshelf
+        href: http://shelfmark.evan
+        description: Ebook search & download (behind VPN)
+        server: my-docker
+        container: shelfmark
     - Prowlarr:
         icon: prowlarr
         href: http://prowlarr.evan

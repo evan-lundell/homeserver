@@ -4,7 +4,8 @@ A Docker Compose template for a self-hosted home server: media (Jellyfin),
 file sharing (Samba), ad-blocking DNS (Pi-hole), a reverse proxy for clean
 local hostnames (Caddy), remote access (WireGuard),
 an optional automated media stack (Prowlarr/Radarr/Sonarr/qBittorrent behind
-a VPN via gluetun), and optional game streaming (Sunshine + Moonlight), with
+a VPN via gluetun), comics & ebooks (Kavita, with Kapowarr/Shelfmark
+downloading behind the same VPN), and optional game streaming (Sunshine + Moonlight), with
 a dashboard (Homepage) tying it together.
 
 **Every service below is independent and optional.** Nothing here requires
@@ -44,13 +45,16 @@ Quick Sync) I haven't confirmed I have.
 | gluetun + qBittorrent | Torrent client routed through a VPN | A VPN provider account that supports it (see [gluetun's wiki](https://github.com/qdm12/gluetun/wiki) for supported providers and credential format — varies by provider) |
 | Prowlarr / Radarr / Sonarr | Automated media search & management | Nothing to start; each generates its own API key on first run |
 | Bazarr     | Subtitle downloads for Radarr/Sonarr libraries (incl. forced/foreign-dialogue subs) | Nothing to start; subtitle providers (e.g. a free [OpenSubtitles](https://www.opensubtitles.com) account) are added in its UI |
+| Kapowarr   | Comic automation ("Sonarr for comics") — monitors series, grabs new issues, mostly via direct downloads from GetComics | A free [ComicVine](https://comicvine.gamespot.com/api/) API key, entered in its UI |
+| Shelfmark  | Ebook search & download (Readarr was retired in 2025) | Nothing to start; sources and metadata providers are set up in its UI |
+| Kavita     | Comics/manga/ebook library and web reader, with OPDS and KOReader progress sync | Nothing external — admin account is created on first visit |
 | FlareSolverr | Solves Cloudflare challenges for Prowlarr indexers that need it | Nothing — no account, no config |
 | Homepage   | Dashboard linking all of the above        | Nothing extra to start — reuses the above (optional: a free [Finnhub](https://finnhub.io/register) key for the stock widget, a Google Calendar ICS URL for the calendar widget) |
 | Uptime Kuma | Uptime monitoring/alerting for your other services | Nothing external — admin account is created in its UI on first visit |
 
 None of these depend on each other except: Caddy assumes you're using
 Pi-hole (or some other local DNS) to resolve your chosen local hostnames;
-qBittorrent, Prowlarr, and FlareSolverr depend on gluetun
+qBittorrent, Prowlarr, FlareSolverr, Kapowarr, and Shelfmark depend on gluetun
 (`network_mode: "service:gluetun"`); and Homepage's dashboard widgets need
 whatever API keys/passwords the services they point at were given.
 
@@ -106,6 +110,7 @@ of things are hardware/environment-dependent — check what applies to you:
    mkdir -p pihole/etc-pihole pihole/etc-dnsmasq.d
    mkdir -p caddy/data caddy/config
    mkdir -p gluetun qbittorrent prowlarr radarr sonarr bazarr
+   mkdir -p kapowarr/db shelfmark kavita
    mkdir -p uptime-kuma
    mkdir -p speedtest-tracker
    mkdir -p sunshine/home
@@ -339,6 +344,39 @@ change all of them together, to whatever names/number of users you want):
   add a FlareSolverr proxy with host `http://localhost:8191` (shared
   network namespace with Prowlarr, so `localhost` — not a container name —
   is what resolves), then set the affected indexer(s) to use it.
+
+**Kapowarr / Shelfmark / Kavita (comics & ebooks)**
+- Kapowarr and Shelfmark run behind gluetun like qBittorrent, even though
+  most of what they fetch is direct HTTPS downloads rather than torrents.
+  Their web UI ports (5656, 8084) are therefore published on the `gluetun`
+  service, not their own. Adding a port there recreates gluetun, and
+  `docker compose up -d gluetun` does **not** recreate the containers
+  sharing its network namespace — follow it with
+  `docker compose up -d --force-recreate qbittorrent prowlarr flaresolverr kapowarr shelfmark`,
+  or they're left attached to the old, dead namespace.
+- Everything mounts `/mnt/media/Plex:/data`, the same as qBittorrent, so
+  paths qBittorrent reports resolve as-is and moves into the library are
+  same-filesystem renames. Libraries live at `/data/Comics` and `/data/Books`.
+- **Kapowarr**: Settings → General: paste your ComicVine API key. Settings →
+  Media Management: add root folder `/data/Comics`. Settings → Download
+  Clients: add qBittorrent at `http://localhost:8081`. Settings → General
+  also has a FlareSolverr URL field: `http://localhost:8191`.
+- **Shelfmark**: uses the `-lite` image, which skips the bundled Chromium
+  Cloudflare bypasser in favor of the existing FlareSolverr
+  (`EXT_BYPASSER_URL`), saving a few hundred MB of RAM. Direct downloads
+  must be enabled in its settings. For torrents, add Prowlarr
+  (`http://localhost:9696`) and qBittorrent (`http://localhost:8081`) in its
+  settings. Completed books land in `/books` (= `/data/Books`).
+- **Kavita**: mounts the library read-only (it only reads files; covers and
+  metadata live in `./kavita`). Create a Comics library on `/data/Comics`
+  and a Books library on `/data/Books`.
+- **E-readers**: a jailbroken Kindle (or a Kobo) running
+  [KOReader](https://koreader.rocks) can browse and download from Kavita's
+  OPDS feed and sync reading progress both ways (Kavita v0.8.7+: in
+  KOReader, Progress sync → custom server
+  `http://kavita.evan/api/koreader/<your-api-key>/`). Kavita's docs advise
+  against KOReader's *automatic* sync, since it can overwrite progress, so
+  push/pull manually.
 
 **Uptime Kuma**
 - On first visit to `http://uptime.evan` (or `localhost:3001`) you'll be
