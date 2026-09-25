@@ -389,6 +389,31 @@ change all of them together, to whatever names/number of users you want):
   create a new one), and match its slug in `services.yaml`'s `uptimekuma`
   widget (defaults to `default` here). Skip the `widget:` block if you don't
   want this.
+- Give each monitor 2 retries (60s apart). Nightly `maintenance.sh`
+  recreates containers at 3am, and with zero retries every image update
+  sends a false "down" alert.
+- **VPN monitors**: gluetun's control server (port 8000, reachable from
+  Uptime Kuma as `http://gluetun:8000`) requires auth. Create
+  `gluetun/auth/config.toml` with a read-only API-key role:
+  ```toml
+  [[roles]]
+  name = "uptime-kuma"
+  routes = ["GET /v1/vpn/status", "GET /v1/portforward", "GET /v1/publicip/ip"]
+  auth = "apikey"
+  apikey = "<22+ random characters>"
+  ```
+  gluetun only reads it at startup, so recreate gluetun and its dependents
+  afterwards. Then add a **Keyword** monitor on `/v1/vpn/status` (keyword
+  `"running"`) and a **JSON Query** monitor on `/v1/portforward` (expression
+  `port > 0`, expected value `true`). Both need the header
+  `{"X-API-Key": "<key>"}`. They catch the tunnel or port forwarding
+  silently breaking while every container still shows as running.
+- **External DNS**: the Pi-hole DNS monitor on a local name like
+  `dashboard.evan` stays green even if Pi-hole's upstream is broken. Add a
+  second DNS monitor resolving e.g. `google.com` against your server's IP.
+- **Push monitors**: `maintenance.sh` and `scripts/disk-check.sh` report to
+  Uptime Kuma push monitors if `UPTIME_KUMA_PUSH_MAINTENANCE` /
+  `UPTIME_KUMA_PUSH_DISK` are set in `.env` (see `scripts/README.md`).
 
 **Speedtest Tracker**
 - Runs an Ookla speed test on the schedule in `compose.yaml`

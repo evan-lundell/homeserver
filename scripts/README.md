@@ -37,6 +37,26 @@ images.
    # 0 3 * * * ~/homeserver/scripts/maintenance.sh
    ```
 
+## Uptime Kuma push monitors (optional)
+
+`maintenance.sh` pings `UPTIME_KUMA_PUSH_MAINTENANCE` from `.env` after a
+completed run. Warnings (failed image pulls, reboot required) go in the
+message. Create the matching Uptime Kuma **Push** monitor with a 25-hour
+(90000s) heartbeat interval: a FATAL exit, or cron not running at all, then
+shows up as an alert the next night.
+
+`disk-check.sh` reports usage of `/` and `/mnt/media` to
+`UPTIME_KUMA_PUSH_DISK`, and pushes "down" once any of them reaches 90%. Run it
+every 30 minutes against a push monitor with a 60-minute (3600s) interval:
+
+```sh
+crontab -e
+# */30 * * * * ~/homeserver/scripts/disk-check.sh
+```
+
+Use the push URL Uptime Kuma shows, without its `?status=...` query string.
+Both scripts do nothing if the variable is unset or `changeme`.
+
 ## What it backs up
 
 Anything hand-edited that can't be regenerated from git or from an app's own

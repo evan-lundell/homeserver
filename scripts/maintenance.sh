@@ -130,7 +130,7 @@ fi
 # 5. gluetun-dependent containers need explicit recreation
 #    in case gluetun itself got a new image (network namespace gets recreated)
 log "--- Ensuring gluetun-dependent containers are in sync ---"
-docker compose up -d gluetun qbittorrent prowlarr flaresolverr >> "$LOGFILE" 2>&1
+docker compose up -d gluetun qbittorrent prowlarr flaresolverr kapowarr shelfmark >> "$LOGFILE" 2>&1
 
 # 6. Clean up old unused images, but leave anything from today alone so
 #    a same-day rollback (docker compose down && re-pull old tag) is
@@ -147,4 +147,17 @@ log ""
 # Reminder: check if a reboot is needed (e.g. after a kernel update)
 if [ -f /var/run/reboot-required ]; then
     log "!!! REBOOT REQUIRED !!! See $LOGFILE for details."
+fi
+
+# Tell Uptime Kuma this run completed. The push monitor goes down if it
+# hears nothing for 25h, so a FATAL exit above (or cron not running at all)
+# surfaces as an alert the next night. Warnings ride along in the message.
+PUSH_URL=$(grep -E '^UPTIME_KUMA_PUSH_MAINTENANCE=' "$REPO/.env" 2>/dev/null | cut -d= -f2-)
+if [ -n "$PUSH_URL" ] && [ "$PUSH_URL" != "changeme" ]; then
+    PUSH_MSG="OK"
+    [ "${#FAILED_PULLS[@]}" -gt 0 ] && PUSH_MSG="pull failures: ${FAILED_PULLS[*]}"
+    [ -f /var/run/reboot-required ] && PUSH_MSG="$PUSH_MSG; reboot required"
+    curl -fsS -m 10 -o /dev/null --get --data-urlencode "status=up" \
+        --data-urlencode "msg=$PUSH_MSG" "$PUSH_URL" >> "$LOGFILE" 2>&1 \
+        || log "WARN: Uptime Kuma push failed"
 fi
