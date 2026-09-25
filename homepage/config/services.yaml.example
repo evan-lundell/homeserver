@@ -115,18 +115,6 @@
           type: uptimekuma
           url: http://uptime-kuma:3001
           slug: default
-    - Speedtest Tracker:
-        icon: speedtest-tracker
-        href: http://speedtest.evan
-        description: Scheduled internet speed tests
-        server: my-docker
-        container: speedtest-tracker
-        widget:
-          type: speedtest
-          url: http://speedtest-tracker:80
-          version: 2
-          key: "{{HOMEPAGE_VAR_SPEEDTEST_API_KEY}}"
-          bitratePrecision: 0
     - Samba:
         icon: samba-server
         href: smb://samba.evan/media

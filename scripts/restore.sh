@@ -49,7 +49,9 @@ RUNTIME_DIRS=(
     radarr
     sonarr
     bazarr
-    speedtest-tracker
+    kapowarr/db
+    shelfmark
+    kavita
     homepage/config/logs
 )
 

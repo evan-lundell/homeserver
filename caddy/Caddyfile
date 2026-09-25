@@ -39,10 +39,6 @@ http://uptime.evan {
     reverse_proxy localhost:3001
 }
 
-http://speedtest.evan {
-    reverse_proxy localhost:8765
-}
-
 http://kapowarr.evan {
     reverse_proxy localhost:5656
 }

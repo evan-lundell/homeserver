@@ -112,7 +112,6 @@ of things are hardware/environment-dependent — check what applies to you:
    mkdir -p gluetun qbittorrent prowlarr radarr sonarr bazarr
    mkdir -p kapowarr/db shelfmark kavita
    mkdir -p uptime-kuma
-   mkdir -p speedtest-tracker
    mkdir -p sunshine/home
    sudo mkdir -p /srv/general-share && sudo chown "$(id -un):$(id -gn)" /srv/general-share
    ```
@@ -414,18 +413,6 @@ change all of them together, to whatever names/number of users you want):
 - **Push monitors**: `maintenance.sh` and `scripts/disk-check.sh` report to
   Uptime Kuma push monitors if `UPTIME_KUMA_PUSH_MAINTENANCE` /
   `UPTIME_KUMA_PUSH_DISK` are set in `.env` (see `scripts/README.md`).
-
-**Speedtest Tracker**
-- Runs an Ookla speed test on the schedule in `compose.yaml`
-  (`SPEEDTEST_SCHEDULE`, every 2 hours by default) and keeps the history.
-- Before first start, fill in `SPEEDTEST_APP_KEY` (generate with
-  `echo "base64:$(openssl rand -base64 32)"`), `SPEEDTEST_ADMIN_EMAIL` and
-  `SPEEDTEST_ADMIN_PASSWORD` in `.env`. The admin values are only read when
-  the database is first created; change them later in the UI.
-- For the Homepage widget: log in at `http://speedtest.evan` (or
-  `localhost:8765`), create an API token with read access (under your
-  profile → API Tokens), put it in `.env` as `SPEEDTEST_API_KEY`, and
-  recreate Homepage (`docker compose up -d homepage`).
 
 ## Backup
 
