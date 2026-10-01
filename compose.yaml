@@ -27,10 +27,12 @@ services:
     volumes:
       - /mnt/media:/media
       - /srv/general-share:/general
+      - /srv/bros-share:/bros
       - ./samba/smb.conf:/etc/samba/smb.conf
     command: >
       -u "evan;${SAMBA_EVAN_PASSWORD}"
       -u "karla;${SAMBA_KARLA_PASSWORD}"
+      -u "bros;${SAMBA_BROS_PASSWORD}"
 
   wireguard:
     image: ghcr.io/wg-easy/wg-easy
