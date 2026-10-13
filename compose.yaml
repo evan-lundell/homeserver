@@ -45,6 +45,49 @@ services:
       - PGID=1000
       - PUID=1000
       - WG_DEFAULT_DNS=${SERVER_LAN_IP}
+      # Friends' peers live in 10.8.0.200/29 (set each one's address in the
+      # wg-easy UI) and may only reach Samba (445), Jellyfin (8096),
+      # Pi-hole DNS, and Caddy (80) — which itself only serves them
+      # jellyfin.evan (see the friend check in caddy/Caddyfile). Nothing else
+      # on the server, the LAN, or other peers.
+      # Samba/Jellyfin are Docker-published (DNAT'd into FORWARD), hence
+      # matching on the pre-DNAT port via conntrack. The rest are wg-easy's
+      # defaults (WG_POST_UP replaces rather than extends them), with
+      # MASQUERADE pointed at this host's real NIC (enp2s0, not eth0) plus
+      # DOCKER-USER accepts: Docker sets the nft FORWARD policy to DROP, which
+      # otherwise blocks every peer from the LAN/internet. wg-easy's own
+      # iptables is legacy, so those two go through iptables-nft explicitly;
+      # the friend DROPs above (legacy) still apply on top.
+      - >-
+        WG_POST_UP=
+        iptables -A INPUT -i wg0 -s 10.8.0.200/29 -p udp --dport 53 -j ACCEPT;
+        iptables -A INPUT -i wg0 -s 10.8.0.200/29 -p tcp --dport 53 -j ACCEPT;
+        iptables -A INPUT -i wg0 -s 10.8.0.200/29 -p tcp --dport 80 -j ACCEPT;
+        iptables -A INPUT -i wg0 -s 10.8.0.200/29 -j DROP;
+        iptables -A FORWARD -i wg0 -s 10.8.0.200/29 -m conntrack --ctproto tcp --ctorigdstport 445 -j ACCEPT;
+        iptables -A FORWARD -i wg0 -s 10.8.0.200/29 -m conntrack --ctproto tcp --ctorigdstport 8096 -j ACCEPT;
+        iptables -A FORWARD -i wg0 -s 10.8.0.200/29 -j DROP;
+        iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o enp2s0 -j MASQUERADE;
+        iptables-nft -I DOCKER-USER -i wg0 -j ACCEPT;
+        iptables-nft -I DOCKER-USER -o wg0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT;
+        iptables -A INPUT -p udp -m udp --dport 51820 -j ACCEPT;
+        iptables -A FORWARD -i wg0 -j ACCEPT;
+        iptables -A FORWARD -o wg0 -j ACCEPT
+      - >-
+        WG_POST_DOWN=
+        iptables -D INPUT -i wg0 -s 10.8.0.200/29 -p udp --dport 53 -j ACCEPT;
+        iptables -D INPUT -i wg0 -s 10.8.0.200/29 -p tcp --dport 53 -j ACCEPT;
+        iptables -D INPUT -i wg0 -s 10.8.0.200/29 -p tcp --dport 80 -j ACCEPT;
+        iptables -D INPUT -i wg0 -s 10.8.0.200/29 -j DROP;
+        iptables -D FORWARD -i wg0 -s 10.8.0.200/29 -m conntrack --ctproto tcp --ctorigdstport 445 -j ACCEPT;
+        iptables -D FORWARD -i wg0 -s 10.8.0.200/29 -m conntrack --ctproto tcp --ctorigdstport 8096 -j ACCEPT;
+        iptables -D FORWARD -i wg0 -s 10.8.0.200/29 -j DROP;
+        iptables -t nat -D POSTROUTING -s 10.8.0.0/24 -o enp2s0 -j MASQUERADE;
+        iptables-nft -D DOCKER-USER -i wg0 -j ACCEPT;
+        iptables-nft -D DOCKER-USER -o wg0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT;
+        iptables -D INPUT -p udp -m udp --dport 51820 -j ACCEPT;
+        iptables -D FORWARD -i wg0 -j ACCEPT;
+        iptables -D FORWARD -o wg0 -j ACCEPT
     volumes:
       - ./wireguard:/etc/wireguard
     cap_add:

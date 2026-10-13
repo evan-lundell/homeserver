@@ -1,54 +1,88 @@
-http://jellyfin.evan {
-    reverse_proxy localhost:8096
-}
+# All plain-http sites live in this one block so the friend check below is a
+# single default-deny choke point: friends' WireGuard peers (10.8.0.200/29,
+# see the wireguard WG_POST_UP rules in compose.yaml) only get the hosts
+# listed in `not host`, and any site added here later is hidden from them
+# automatically. To add a service: a matcher plus a `handle` below.
+http://*.evan {
+    @friend_blocked {
+        remote_ip 10.8.0.200/29
+        not host jellyfin.evan
+    }
+    # `handle` blocks are mutually exclusive and run in the order written
+    # here, so this one has to stay first.
+    handle @friend_blocked {
+        abort
+    }
 
-http://pihole.evan {
-    redir / /admin
-    reverse_proxy localhost:8080
-}
+    @jellyfin host jellyfin.evan
+    handle @jellyfin {
+        reverse_proxy localhost:8096
+    }
 
-http://wireguard.evan {
-    reverse_proxy localhost:51821
-}
+    @pihole host pihole.evan
+    handle @pihole {
+        redir / /admin
+        reverse_proxy localhost:8080
+    }
 
-http://prowlarr.evan {
-    reverse_proxy localhost:9696
-}
+    @wireguard host wireguard.evan
+    handle @wireguard {
+        reverse_proxy localhost:51821
+    }
 
-http://qbittorrent.evan {
-    reverse_proxy localhost:8081
-}
+    @prowlarr host prowlarr.evan
+    handle @prowlarr {
+        reverse_proxy localhost:9696
+    }
 
-http://radarr.evan {
-    reverse_proxy localhost:7878
-}
+    @qbittorrent host qbittorrent.evan
+    handle @qbittorrent {
+        reverse_proxy localhost:8081
+    }
 
-http://dashboard.evan {
-    reverse_proxy localhost:3000
-}
+    @radarr host radarr.evan
+    handle @radarr {
+        reverse_proxy localhost:7878
+    }
 
-http://sonarr.evan {
-    reverse_proxy localhost:8989
-}
+    @dashboard host dashboard.evan
+    handle @dashboard {
+        reverse_proxy localhost:3000
+    }
 
-http://bazarr.evan {
-    reverse_proxy localhost:6767
-}
+    @sonarr host sonarr.evan
+    handle @sonarr {
+        reverse_proxy localhost:8989
+    }
 
-http://uptime.evan {
-    reverse_proxy localhost:3001
-}
+    @bazarr host bazarr.evan
+    handle @bazarr {
+        reverse_proxy localhost:6767
+    }
 
-http://kapowarr.evan {
-    reverse_proxy localhost:5656
-}
+    @uptime host uptime.evan
+    handle @uptime {
+        reverse_proxy localhost:3001
+    }
 
-http://shelfmark.evan {
-    reverse_proxy localhost:8084
-}
+    @kapowarr host kapowarr.evan
+    handle @kapowarr {
+        reverse_proxy localhost:5656
+    }
 
-http://kavita.evan {
-    reverse_proxy localhost:5000
+    @shelfmark host shelfmark.evan
+    handle @shelfmark {
+        reverse_proxy localhost:8084
+    }
+
+    @kavita host kavita.evan
+    handle @kavita {
+        reverse_proxy localhost:5000
+    }
+
+    handle {
+        abort
+    }
 }
 
 https://sunshine.evan {
