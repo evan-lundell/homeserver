@@ -1,4 +1,4 @@
-FROM ghcr.io/lizardbyte/sunshine:v2026.911.165624-debian-trixie
+FROM ghcr.io/lizardbyte/sunshine:v2026.914.233613-debian-trixie
 
 USER root
 

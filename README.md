@@ -214,6 +214,18 @@ docker compose up -d
   namespace the device was created in — a container's own network namespace
   never sees them otherwise). Skipping any one of these results in video
   working fine but mouse/keyboard input silently doing nothing.
+- **Gamepad support needs one more device: `/dev/uhid`**, separate from
+  `/dev/uinput` above (which only covers keyboard/mouse and basic input).
+  Sunshine's `libvirtualhid` library hard-codes `/dev/uhid` for
+  full-featured gamepad emulation — without it every gamepad type is
+  silently disabled (`gamepads.virtualhid-not-available` in the logs → "No
+  gamepad input is available"), and no controller works from any client.
+  Same fix pattern as `/dev/uinput`: a udev rule
+  (`KERNEL=="uhid", GROUP="input", MODE="0660"`) plus passing the device
+  through in `compose.yaml`. (You may also see `Failed to gain
+  CAP_SYS_ADMIN` in the logs around the same time — that's unrelated,
+  Sunshine's own harmless KMS-capture self-test probing; ignore it if
+  you're using X11 capture like this template does.)
 - If HEVC throws encoder errors on real frames (`Failed to end picture
   encode`) — seen on at least one Intel Skylake iGPU — force H.264-only via
   `hevc_mode = 1` in `sunshine.conf` (already done for you in

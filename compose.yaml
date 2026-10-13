@@ -350,6 +350,16 @@ services:
     devices:
       - /dev/dri:/dev/dri
       - /dev/uinput:/dev/uinput
+      # libvirtualhid's Linux backend (uhid_backend.cpp) hard-codes this
+      # path for full-featured gamepad emulation (motion/touchpad/RGB) —
+      # separate from /dev/uinput above, which only covers keyboard/mouse
+      # and basic input. Without it, every gamepad type is silently
+      # disabled ("gamepads.virtualhid-not-available" ->
+      # "No gamepad input is available") — no controller works from any
+      # client. (A CAP_SYS_ADMIN error logged around the same time is an
+      # unrelated red herring: Sunshine's own KMS-capture self-test
+      # probing, harmless and expected since this setup uses X11 capture.)
+      - /dev/uhid:/dev/uhid
     group_add:
       - "992" # host `render` group — VAAPI access to /dev/dri/renderD128
       - "996" # host `input` group — access to /dev/uinput and /dev/input/*
