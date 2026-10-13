@@ -323,6 +323,24 @@ services:
     ports:
       - "6767:6767"
 
+  # Syncs TRaSH Guides profiles/custom formats into Radarr + Sonarr once a day
+  # (config: recyclarr/recyclarr.yml). Talks only to the *arrs and GitHub —
+  # downloads no media, so it doesn't need to sit behind gluetun.
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr:8
+    container_name: recyclarr
+    restart: unless-stopped
+    user: 1000:1000
+    environment:
+      - TZ=America/Chicago
+      - RADARR_API_KEY=${RADARR_API_KEY}
+      - SONARR_API_KEY=${SONARR_API_KEY}
+    volumes:
+      - ./recyclarr:/config
+    depends_on:
+      - radarr
+      - sonarr
+
   sunshine:
     build: ./sunshine
     container_name: sunshine

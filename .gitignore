@@ -40,6 +40,11 @@ radarr/
 # sonarr — runtime config, API keys
 sonarr/
 
+# recyclarr — only recyclarr.yml is hand-edited config (API keys come from .env);
+# the rest is cached guide data, logs and sync state
+recyclarr/*
+!recyclarr/recyclarr.yml
+
 # bazarr — runtime config, API keys, provider credentials
 bazarr/
 

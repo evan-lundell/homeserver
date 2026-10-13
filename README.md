@@ -44,6 +44,7 @@ Quick Sync) I haven't confirmed I have.
 | WireGuard  | VPN for remote access (wg-easy)           | A domain (or subdomain) with an A record pointing at your static public IP — skip if you don't need remote access |
 | gluetun + qBittorrent | Torrent client routed through a VPN | A VPN provider account that supports it (see [gluetun's wiki](https://github.com/qdm12/gluetun/wiki) for supported providers and credential format — varies by provider) |
 | Prowlarr / Radarr / Sonarr | Automated media search & management | Nothing to start; each generates its own API key on first run |
+| Recyclarr  | Daily sync of [TRaSH Guides](https://trash-guides.info) quality profiles/custom formats into Radarr/Sonarr (`recyclarr/recyclarr.yml`) | Nothing — reuses the Radarr/Sonarr API keys from `.env` |
 | Bazarr     | Subtitle downloads for Radarr/Sonarr libraries (incl. forced/foreign-dialogue subs) | Nothing to start; subtitle providers (e.g. a free [OpenSubtitles](https://www.opensubtitles.com) account) are added in its UI |
 | Kapowarr   | Comic automation ("Sonarr for comics") — monitors series, grabs new issues, mostly via direct downloads from GetComics | A free [ComicVine](https://comicvine.gamespot.com/api/) API key, entered in its UI |
 | Shelfmark  | Ebook search & download (Readarr was retired in 2025) | Nothing to start; sources and metadata providers are set up in its UI |
@@ -153,7 +154,7 @@ of things are hardware/environment-dependent — check what applies to you:
 - **Radarr / Sonarr**: these generate their own API key on first run. Start
   them (`docker compose up -d radarr sonarr`), open their web UIs, copy the
   API key from Settings → General, then put it in `.env` and restart
-  Homepage so its dashboard widgets can use it.
+  Homepage (dashboard widgets) and Recyclarr (profile sync) so they can use it.
 
 ### 4. Start it
 
