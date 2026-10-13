@@ -99,3 +99,17 @@ https://sunshine.evan {
         }
     }
 }
+
+# Public internet-facing Jellyfin, deliberately its own site block rather
+# than folded into the `*.evan` wildcard above — Caddy routes by exact Host
+# header, so this can never accidentally expose any of the internal .evan
+# services, and this block can never match an internal .evan request either.
+# Real cert via HTTP-01 (needs port 80 reachable, same as 443 — Caddy
+# handles the challenge and redirects everything else to HTTPS).
+jellyfin.evanlundell.fyi {
+    log {
+        output file /var/log/caddy/jellyfin-access.log
+        format json
+    }
+    reverse_proxy localhost:8096
+}

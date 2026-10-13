@@ -18,6 +18,7 @@ pihole/etc-dnsmasq.d/
 # Caddy — may contain TLS keys/certs, autosave state
 caddy/data/
 caddy/config/
+caddy/logs/
 
 # Samba — real usernames/shares/paths are specific to each setup
 samba/smb.conf
