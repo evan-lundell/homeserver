@@ -54,8 +54,32 @@ crontab -e
 # */30 * * * * ~/homeserver/scripts/disk-check.sh
 ```
 
+`indexer-check.sh` recovers indexers that Prowlarr has disabled after
+repeated failures, and reports to `UPTIME_KUMA_PUSH_INDEXERS`. For each
+disabled indexer it fetches the site from inside the VPN:
+
+- a Cloudflare ban page (`error code: 1006`/`1015`/`1020`) means the VPN exit
+  IP is banned, so it reconnects gluetun to a new random server, up to 3 tries
+  and at most once every 6 hours (each reconnect briefly interrupts
+  qBittorrent). This needs the `indexer-check` role in
+  `gluetun/auth/config.toml` (see the main README's Uptime Kuma section);
+- anything else (usually a stale Cloudflare challenge) is fixed by re-testing
+  the indexer, same as Prowlarr's "Test" button.
+
+It then re-tests the indexer in Prowlarr, and in Sonarr/Radarr for any indexer
+their health page lists as unavailable, since those keep their own backoff of
+up to 24 hours. It pushes "down" if an indexer is still disabled or banned.
+Actions are logged to `~/homeserver-maintenance/indexer-check.log`. Run it
+every 30 minutes, offset from `disk-check.sh`, against a push monitor with a
+60-minute (3600s) interval:
+
+```sh
+crontab -e
+# 15,45 * * * * ~/homeserver/scripts/indexer-check.sh
+```
+
 Use the push URL Uptime Kuma shows, without its `?status=...` query string.
-Both scripts do nothing if the variable is unset or `changeme`.
+All three scripts skip the push if the variable is unset or `changeme`.
 
 ## What it backs up
 

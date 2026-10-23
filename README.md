@@ -413,6 +413,14 @@ change all of them together, to whatever names/number of users you want):
   routes = ["GET /v1/vpn/status", "GET /v1/portforward", "GET /v1/publicip/ip"]
   auth = "apikey"
   apikey = "<22+ random characters>"
+
+  # Lets scripts/indexer-check.sh reconnect the VPN when an indexer bans
+  # the exit IP (see scripts/README.md).
+  [[roles]]
+  name = "indexer-check"
+  routes = ["GET /v1/vpn/status", "PUT /v1/vpn/status", "GET /v1/publicip/ip"]
+  auth = "apikey"
+  apikey = "<a different 22+ random characters>"
   ```
   gluetun only reads it at startup, so recreate gluetun and its dependents
   afterwards. Then add a **Keyword** monitor on `/v1/vpn/status` (keyword
@@ -423,9 +431,10 @@ change all of them together, to whatever names/number of users you want):
 - **External DNS**: the Pi-hole DNS monitor on a local name like
   `dashboard.evan` stays green even if Pi-hole's upstream is broken. Add a
   second DNS monitor resolving e.g. `google.com` against your server's IP.
-- **Push monitors**: `maintenance.sh` and `scripts/disk-check.sh` report to
-  Uptime Kuma push monitors if `UPTIME_KUMA_PUSH_MAINTENANCE` /
-  `UPTIME_KUMA_PUSH_DISK` are set in `.env` (see `scripts/README.md`).
+- **Push monitors**: `maintenance.sh`, `scripts/disk-check.sh` and
+  `scripts/indexer-check.sh` report to Uptime Kuma push monitors if
+  `UPTIME_KUMA_PUSH_MAINTENANCE` / `UPTIME_KUMA_PUSH_DISK` /
+  `UPTIME_KUMA_PUSH_INDEXERS` are set in `.env` (see `scripts/README.md`).
 
 ## Backup
 
