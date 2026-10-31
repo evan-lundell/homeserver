@@ -401,3 +401,16 @@ services:
       - ./uptime-kuma:/app/data
     ports:
       - "3001:3001"
+
+  nuzlocke-tracker:
+    # Own app: github.com/evan-lundell/nuzlocke-tracker (image built by its CI).
+    # Update: docker compose pull nuzlocke-tracker && docker compose up -d nuzlocke-tracker
+    image: ghcr.io/evan-lundell/nuzlocke-tracker:latest
+    container_name: nuzlocke-tracker
+    restart: unless-stopped
+    volumes:
+      # SQLite DB (runs + location edits). Image runs as uid 1000, so this
+      # dir must be owned 1000:1000.
+      - ./nuzlocke/data:/data
+    ports:
+      - "3456:3000"

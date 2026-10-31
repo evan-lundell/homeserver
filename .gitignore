@@ -54,6 +54,9 @@ kapowarr/
 shelfmark/
 kavita/
 
+# nuzlocke-tracker — runtime SQLite database (runs, location edits)
+nuzlocke/
+
 # uptime-kuma — runtime database (monitors, history, admin credentials)
 uptime-kuma/
 

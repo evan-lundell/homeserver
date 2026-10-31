@@ -52,6 +52,7 @@ Quick Sync) I haven't confirmed I have.
 | FlareSolverr | Solves Cloudflare challenges for Prowlarr indexers that need it | Nothing — no account, no config |
 | Homepage   | Dashboard linking all of the above        | Nothing extra to start — reuses the above (optional: a free [Finnhub](https://finnhub.io/register) key for the stock widget, a Google Calendar ICS URL for the calendar widget) |
 | Uptime Kuma | Uptime monitoring/alerting for your other services | Nothing external — admin account is created in its UI on first visit |
+| Nuzlocke Tracker | My own [Pokémon Nuzlocke run tracker](https://github.com/evan-lundell/nuzlocke-tracker) (SQLite, no login — keep it LAN-only) | Nothing — image is public on GHCR |
 
 None of these depend on each other except: Caddy assumes you're using
 Pi-hole (or some other local DNS) to resolve your chosen local hostnames;
@@ -113,6 +114,7 @@ of things are hardware/environment-dependent — check what applies to you:
    mkdir -p gluetun qbittorrent prowlarr radarr sonarr bazarr
    mkdir -p kapowarr/db shelfmark kavita
    mkdir -p uptime-kuma
+   mkdir -p nuzlocke/data   # must be owned by uid 1000 (the image's user)
    mkdir -p sunshine/home
    sudo mkdir -p /srv/general-share && sudo chown "$(id -un):$(id -gn)" /srv/general-share
    ```
