@@ -80,6 +80,15 @@ http://*.evan {
         reverse_proxy localhost:5000
     }
 
+    # Sunshine itself is served by the https:// block below, but this
+    # wildcard claims sunshine.evan on port 80 too, which disables Caddy's
+    # automatic http->https redirect for it — without this, a bare
+    # "sunshine.evan" typed into a browser falls through to the abort.
+    @sunshine host sunshine.evan
+    handle @sunshine {
+        redir https://{host}{uri} permanent
+    }
+
     handle {
         abort
     }
