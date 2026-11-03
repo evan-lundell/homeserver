@@ -228,6 +228,20 @@ docker compose up -d
   CAP_SYS_ADMIN` in the logs around the same time — that's unrelated,
   Sunshine's own harmless KMS-capture self-test probing; ignore it if
   you're using X11 capture like this template does.)
+- **Load the `uinput` and `uhid` modules at boot, or those udev rules may not
+  apply.** The rules only run when the modules load. Until then, the `/dev`
+  nodes exist as `root`-only (`0600`) placeholders and Sunshine can't open
+  them, which typically shows up after a reboot as `ControllerNumber [ ] not
+  allocated` in the logs while the controller does nothing. To fix it:
+
+  ```bash
+  printf 'uinput\nuhid\n' | sudo tee /etc/modules-load.d/sunshine.conf
+  sudo modprobe -a uinput uhid
+  docker restart sunshine  # the container copies device permissions at start
+  ```
+
+  `ls -la /dev/uhid /dev/uinput` should then show group `input` and
+  `crw-rw----`.
 - If HEVC throws encoder errors on real frames (`Failed to end picture
   encode`) — seen on at least one Intel Skylake iGPU — force H.264-only via
   `hevc_mode = 1` in `sunshine.conf` (already done for you in
