@@ -5,7 +5,7 @@ file sharing (Samba), ad-blocking DNS (Pi-hole), a reverse proxy for clean
 local hostnames (Caddy), remote access (WireGuard),
 an optional automated media stack (Prowlarr/Radarr/Sonarr/qBittorrent behind
 a VPN via gluetun), comics & ebooks (Kavita, with Kapowarr/Shelfmark
-downloading behind the same VPN), and optional game streaming (Sunshine + Moonlight), with
+downloading behind the same VPN), with
 a dashboard (Homepage) tying it together.
 
 **Every service below is independent and optional.** Nothing here requires
@@ -37,7 +37,6 @@ Quick Sync) I haven't confirmed I have.
 | Service    | Purpose                                | Needs an account/credential for |
 |------------|------------------------------------------|-----------------------------------|
 | Jellyfin   | Media server                              | Nothing — admin account and libraries are set up in its own first-run wizard |
-| Sunshine   | Game streaming host — play emulators (or anything else) from any device via a Moonlight client | Nothing external — pair via a one-time PIN in the Moonlight app. Significantly more host-dependent setup than everything else here; see notes below |
 | Samba      | File shares over your LAN                 | Just usernames/passwords you pick |
 | Pi-hole    | Network-wide DNS ad-blocking + local DNS  | Nothing external |
 | Caddy      | Reverse proxy for clean local hostnames   | Nothing (works alongside Pi-hole) |
@@ -86,12 +85,7 @@ of things are hardware/environment-dependent — check what applies to you:
   `radarr`, `sonarr`, `qbittorrent`, `homepage`, and the `samba`
   `[media]` share) to match. There's nothing filesystem-specific required,
   but if you're on NTFS via NTFS-3G and Samba writes are misbehaving, see
-  the Samba note below; if you're pooling drives with `mergerfs`, see the
-  gotcha under Sunshine below (only relevant if you use Sunshine).
-- **Sunshine game streaming**: needs a GPU with a hardware video encoder —
-  `sunshine/Dockerfile` here is set up for Intel Quick Sync (VAAPI) on a
-  headless host. See "Sunshine" under Notes below before enabling this one;
-  it needs more host-specific tuning than anything else in this template.
+  the Samba note below.
 
 ### 2. Clone and configure
 
@@ -115,7 +109,6 @@ of things are hardware/environment-dependent — check what applies to you:
    mkdir -p kapowarr/db shelfmark kavita
    mkdir -p uptime-kuma
    mkdir -p nuzlocke/data   # must be owned by uid 1000 (the image's user)
-   mkdir -p sunshine/home
    sudo mkdir -p /srv/general-share && sudo chown "$(id -un):$(id -gn)" /srv/general-share
    ```
 
@@ -183,114 +176,6 @@ docker compose up -d
 - No official client app for Meta Quest (only community VR projects,
   sideloaded); Fire TV/Android TV has an official one from the Amazon
   Appstore.
-
-**Sunshine**
-- By far the most host-dependent service in this template — expect to tune
-  things for your specific GPU/host rather than have it work unmodified.
-  `sunshine/Dockerfile` and `sunshine/entrypoint.sh` are set up for an Intel
-  iGPU (VAAPI, Mesa `iris`/Vulkan) on an otherwise headless Debian host with
-  an **HDMI dummy plug** (a ~$5 EDID emulator) in the video output; adapt the
-  driver packages/`LIBVA_DRIVER_NAME` for Nvidia (NVENC) or AMD. A host with a
-  real monitor attached doesn't need the plug.
-- **Capture needs a real Xorg server with the `modesetting` driver, not Xvfb
-  and not the `dummy` video driver.** Xvfb has no input driver stack at all,
-  so Sunshine's uinput-injected mouse/keyboard never reaches it — only a real
-  Xorg session (with `xserver-xorg-input-libinput`) can pick those up. And the
-  fake `dummy` *video* driver has no GPU path: OpenGL falls back to CPU
-  `llvmpipe` (far too slow for 3DS emulation) and Vulkan fails at surface
-  creation (`Failed to initialize Xlib surface: ErrorOutOfHostMemory`) because
-  `dummy` can't back the DRI3/Present machinery. With a physical (dummy) plug
-  connected, `modesetting` gets full hardware GL/Vulkan. The container also
-  needs the host's `video` group (for `/dev/dri/card0` modesetting, not just
-  `renderD128` for encoding) and `mesa-vulkan-drivers` (without a registered
-  Vulkan ICD, Azahar segfaults on launch).
-- That input path also needs, all at once: a udev rule loosening
-  `/dev/uinput` permissions (`KERNEL=="uinput", GROUP="input", MODE="0660"`),
-  a bind mount of the *whole* `/dev/input` directory (not just `devices:`,
-  which only snapshots fixed paths — new virtual input devices are created
-  dynamically per session), a `device_cgroup_rules` entry allowlisting Linux's
-  input major number (`c 13:* rmw`, since bind-mounting a path doesn't grant
-  cgroup device access on its own), a read-only mount of `/run/udev` (so the
-  container can read the host's device database), and `network_mode: host`
-  (udev hotplug notifications are a netlink broadcast scoped to the network
-  namespace the device was created in — a container's own network namespace
-  never sees them otherwise). Skipping any one of these results in video
-  working fine but mouse/keyboard input silently doing nothing.
-- **Gamepad support needs one more device: `/dev/uhid`**, separate from
-  `/dev/uinput` above (which only covers keyboard/mouse and basic input).
-  Sunshine's `libvirtualhid` library hard-codes `/dev/uhid` for
-  full-featured gamepad emulation — without it every gamepad type is
-  silently disabled (`gamepads.virtualhid-not-available` in the logs → "No
-  gamepad input is available"), and no controller works from any client.
-  Same fix pattern as `/dev/uinput`: a udev rule
-  (`KERNEL=="uhid", GROUP="input", MODE="0660"`) plus passing the device
-  through in `compose.yaml`. (You may also see `Failed to gain
-  CAP_SYS_ADMIN` in the logs around the same time — that's unrelated,
-  Sunshine's own harmless KMS-capture self-test probing; ignore it if
-  you're using X11 capture like this template does.)
-- **Load the `uinput` and `uhid` modules at boot, or those udev rules may not
-  apply.** The rules only run when the modules load. Until then, the `/dev`
-  nodes exist as `root`-only (`0600`) placeholders and Sunshine can't open
-  them, which typically shows up after a reboot as `ControllerNumber [ ] not
-  allocated` in the logs while the controller does nothing. To fix it:
-
-  ```bash
-  printf 'uinput\nuhid\n' | sudo tee /etc/modules-load.d/sunshine.conf
-  sudo modprobe -a uinput uhid
-  docker restart sunshine  # the container copies device permissions at start
-  ```
-
-  `ls -la /dev/uhid /dev/uinput` should then show group `input` and
-  `crw-rw----`.
-- If HEVC throws encoder errors on real frames (`Failed to end picture
-  encode`) — seen on at least one Intel Skylake iGPU — force H.264-only via
-  `hevc_mode = 1` in `sunshine.conf` (already done for you in
-  `entrypoint.sh`, gated on nothing hardware-specific, so harmless to leave
-  even if your GPU's HEVC encoder works fine).
-- CSRF: Sunshine validates the browser `Origin` header against
-  `csrf_allowed_origins` in its config. Whatever hostname(s)/IP:port you
-  actually use to reach its web UI (LAN IP, and/or a Caddy hostname like
-  `sunshine.evan`) need to be listed there or login fails with a CSRF error.
-  `entrypoint.sh` seeds this from `SERVER_LAN_IP`; add further origins as a
-  comma-separated list.
-- If proxying through Caddy: Sunshine's web UI is HTTPS-only with a
-  self-signed cert, so the reverse proxy needs
-  `reverse_proxy https://localhost:47990 { transport http { tls_insecure_skip_verify } }`
-  rather than a plain `reverse_proxy`.
-- **If pooling media storage with `mergerfs`** (this template's example
-  `/mnt/media` setup): its file-*creation* permission check only honors
-  owner/group match, not "other" bits, even though `ls` shows them —
-  confirmed by testing, not just a config quirk (writes to *existing*
-  world-writable files work fine; only *creating new* files misbehaves). In
-  practice this means a save file an emulator tries to create fresh (e.g. a
-  DS `.sav`) can fail with a permission error despite `777` on the folder.
-  The fix used here: match the container's user to your host UID/GID
-  (`usermod -u 1000 lizard && groupmod -g 1000 lizard` in the Dockerfile,
-  1000 being this template's assumed primary host user — adjust to your own
-  `id -u`), not looser permissions.
-- Bundles melonDS (DS), Azahar (3DS), and mGBA (GBA/GB/GBC) by default, installed as AppImages
-  at build time — see `sunshine/Dockerfile` to swap in other
-  emulators/systems. ROMs aren't included; point `sunshine/roms` (or
-  wherever you mount `/roms`) at your own legally-owned dumps, and add each
-  emulator as a Sunshine "Application" (web UI → Applications) pointing at
-  its extracted `AppRun` binary.
-- Both emulators run well with the plug + `modesetting` setup: melonDS
-  (DS) trivially, Azahar (3DS) on Vulkan (`graphics_api=2` in its
-  `qt-config.ini`) at full speed on an Intel HD 530. 3DS emulation is
-  CPU-hungry though: pin the host CPU governor to `performance`
-  (`sunshine/cpu-performance-governor.service` — copy it to
-  `/etc/systemd/system/`, `daemon-reload`, `enable --now`). `powersave` held
-  an i5-6500 near 2.7GHz instead of its 3.6GHz turbo and caused in-game
-  stutter that looked like a network problem (it wasn't — interface
-  error/drop counters were ~zero).
-- **`/tmp` survives `docker restart`** (only a full recreate wipes it), so any
-  stale runtime file in it breaks startup silently. The entrypoint clears the
-  X lock/socket and PulseAudio's runtime dir for this reason: a killed
-  PulseAudio leaves a `pid` file that makes `pulseaudio --start` think it's
-  still running and start nothing — no stream audio, and Azahar segfaults
-  when you open Emulation > Configure mid-game (cubeb audio-device
-  enumeration against the dead server). If you add another daemon to the
-  entrypoint, give it the same treatment.
 
 **Samba**
 - Ships with a custom `smb.conf` rather than the image's auto-generated
